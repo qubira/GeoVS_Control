@@ -5,9 +5,9 @@ import EyeButton from "./EyeButton";
 import LevelPopularityModal from "./LevelPopularityModal";
 
 const LEVEL_COLORS: Record<string, string> = {
-  level1: "var(--geo-purple)",
-  level2: "var(--geo-cyan)",
-  level3: "var(--geo-pink)",
+  level1: "var(--geo-grad-purple)",
+  level2: "var(--geo-grad-cyan)",
+  level3: "var(--geo-grad-pink)",
 };
 
 export default function LevelPopularityCard({ range }: { range: RangeParams }) {
@@ -21,24 +21,21 @@ export default function LevelPopularityCard({ range }: { range: RangeParams }) {
   }, [range.range, range.date]);
 
   return (
-    <div className="panel" style={{ flex: 1, minWidth: 280 }}>
-      <div className="row-between">
-        <h2 style={{ fontSize: 15, margin: "0 0 12px" }}>Niveles más jugados</h2>
+    <div className="metric-card">
+      <div className="row-between" style={{ marginBottom: 2 }}>
+        <h2 className="metric-card-title" style={{ margin: 0 }}>
+          Niveles más jugados
+        </h2>
         <EyeButton onClick={() => setShowDetail(true)} title="Ver detalle por país y jugador" />
       </div>
+      <p className="metric-card-hint">Partidas jugadas en el rango elegido.</p>
 
-      {!data ? (
-        <p className="subtitle" style={{ margin: 0 }}>
-          Cargando...
-        </p>
-      ) : (
-        <BarChart
-          data={data.overall.map((l) => ({ label: l.levelId, value: l.sessionCount, color: LEVEL_COLORS[l.levelId] }))}
-          height={100}
-          formatValue={(v) => `${v} partidas`}
-          emptyLabel="Sin partidas jugadas en este rango."
-        />
-      )}
+      <BarChart
+        data={(data?.overall || []).map((l) => ({ label: l.levelId, value: l.sessionCount, color: LEVEL_COLORS[l.levelId] }))}
+        height={110}
+        formatValue={(v) => `${v} partidas`}
+        emptyLabel={data ? "Sin partidas jugadas en este rango." : "Cargando..."}
+      />
 
       {showDetail && <LevelPopularityModal range={range} onClose={() => setShowDetail(false)} />}
     </div>

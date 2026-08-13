@@ -61,32 +61,30 @@ export default function DashboardScreen() {
         </div>
       )}
 
-      <div className="row" style={{ alignItems: "flex-start", gap: 20 }}>
+      <div className="metrics-grid">
         <OnlineByCountryCard />
         <AccountsByCountryCard range={range} />
-      </div>
+        <LevelPopularityCard range={range} />
 
-      <div className="row" style={{ alignItems: "flex-start", gap: 20, marginTop: 20 }}>
-        <div className="panel" style={{ flex: 1, minWidth: 280 }}>
-          <h2 style={{ fontSize: 15, margin: "0 0 4px" }}>Más tiempo jugado (reciente)</h2>
-          <p className="subtitle" style={{ margin: "0 0 12px", fontSize: 11 }}>
-            Solo cuenta tiempo jugando un nivel activamente, no tiempo en menús.
-          </p>
+        <div className="metric-card">
+          <h2 className="metric-card-title">Más tiempo jugado</h2>
+          <p className="metric-card-hint">Solo tiempo jugando un nivel activamente, no en menús.</p>
+
           {!data ? null : data.topByTotalTime.length === 0 ? (
             <p className="subtitle" style={{ margin: 0 }}>
               Todavía sin datos.
             </p>
           ) : (
-            <table className="data-table">
-              <tbody>
-                {data.topByTotalTime.map((u) => (
+            <table className="data-table" style={{ display: "block", maxHeight: 130, overflowY: "auto" }}>
+              <tbody style={{ display: "block" }}>
+                {data.topByTotalTime.slice(0, 6).map((u) => (
                   <tr
                     key={u.userId}
                     className="row-clickable"
                     onClick={() => openPlayerHistory(u.userId, u.username)}
-                    style={{ opacity: lookingUp === u.userId ? 0.5 : 1 }}
+                    style={{ opacity: lookingUp === u.userId ? 0.5 : 1, display: "flex" }}
                   >
-                    <td>{u.username}</td>
+                    <td style={{ flex: 1 }}>{u.username}</td>
                     <td style={{ textAlign: "right", color: "var(--geo-text-dim)" }}>{formatDuration(u.seconds)}</td>
                   </tr>
                 ))}
@@ -94,8 +92,6 @@ export default function DashboardScreen() {
             </table>
           )}
         </div>
-
-        <LevelPopularityCard range={range} />
       </div>
 
       {historyUser && <UserHistoryModal user={historyUser} onClose={() => setHistoryUser(null)} />}

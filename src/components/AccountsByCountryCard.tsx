@@ -15,24 +15,21 @@ export default function AccountsByCountryCard({ range }: { range: RangeParams })
   }, [range.range, range.date]);
 
   return (
-    <div className="panel" style={{ flex: 1, minWidth: 280 }}>
-      <div className="row-between">
-        <h2 style={{ fontSize: 15, margin: "0 0 12px" }}>Cuentas con sesión por país</h2>
+    <div className="metric-card">
+      <div className="row-between" style={{ marginBottom: 2 }}>
+        <h2 className="metric-card-title" style={{ margin: 0 }}>
+          Cuentas con sesión por país
+        </h2>
         <EyeButton onClick={() => setShowDetail(true)} title="Ver todos los países" />
       </div>
+      <p className="metric-card-hint">Histórico del rango elegido.</p>
 
-      {!data ? (
-        <p className="subtitle" style={{ margin: 0 }}>
-          Cargando...
-        </p>
-      ) : (
-        <BarChart
-          data={data.byCountry.slice(0, 8).map((c) => ({ label: c.country, value: c.accounts, color: "var(--geo-purple)" }))}
-          height={100}
-          formatValue={(v) => `${v} cuentas`}
-          emptyLabel="Sin datos en este rango."
-        />
-      )}
+      <BarChart
+        data={(data?.byCountry || []).slice(0, 6).map((c) => ({ label: c.country, value: c.accounts, color: "var(--geo-grad-purple)" }))}
+        height={110}
+        formatValue={(v) => `${v} cuentas`}
+        emptyLabel={data ? "Sin datos en este rango." : "Cargando..."}
+      />
 
       {showDetail && <AccountsByCountryModal range={range} onClose={() => setShowDetail(false)} />}
     </div>

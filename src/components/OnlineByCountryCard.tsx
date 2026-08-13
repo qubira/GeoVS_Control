@@ -25,43 +25,20 @@ export default function OnlineByCountryCard() {
   }, []);
 
   return (
-    <div className="panel" style={{ flex: 1, minWidth: 280 }}>
-      <div className="row-between">
-        <h2 style={{ fontSize: 15, margin: "0 0 12px" }}>
-          <span className="live-dot" />
-          Conexiones por país (en vivo)
-        </h2>
-      </div>
+    <div className="metric-card">
+      <h2 className="metric-card-title">
+        <span className="live-dot" />
+        Conexiones por país (en vivo)
+      </h2>
+      <p className="metric-card-hint">{data ? `${data.totalOnline} conectados ahora` : "Cargando..."}</p>
 
-      {!data ? (
-        <p className="subtitle" style={{ margin: 0 }}>
-          Cargando...
-        </p>
-      ) : (
-        <>
-          <div className="stat-value" style={{ fontSize: 22, marginBottom: 10 }}>
-            {data.totalOnline} <span style={{ fontSize: 12, color: "var(--geo-text-dim)", fontWeight: 400 }}>conectados ahora</span>
-          </div>
-          <BarChart
-            data={data.byCountry.slice(0, 8).map((c) => ({ label: c.country, value: c.count }))}
-            height={100}
-            formatValue={(v) => `${v} en línea`}
-            emptyLabel="Nadie conectado en este momento."
-          />
-          {data.byCountry.length > 0 && (
-            <table className="data-table" style={{ marginTop: 12 }}>
-              <tbody>
-                {data.byCountry.slice(0, 10).map((c) => (
-                  <tr key={c.country} className="row-clickable" onClick={() => setCountry(c.country)}>
-                    <td>{c.country}</td>
-                    <td style={{ textAlign: "right", color: "var(--geo-text-dim)" }}>{c.count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </>
-      )}
+      <BarChart
+        data={(data?.byCountry || []).slice(0, 6).map((c) => ({ label: c.country, value: c.count }))}
+        height={110}
+        formatValue={(v) => `${v} en línea`}
+        emptyLabel="Nadie conectado en este momento."
+        onBarClick={(d) => setCountry(d.label)}
+      />
 
       {country && <CountryConnectionsModal country={country} onClose={() => setCountry(null)} />}
     </div>

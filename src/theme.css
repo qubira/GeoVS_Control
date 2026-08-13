@@ -11,6 +11,10 @@
   --geo-text: #f5f5ff;
   --geo-text-dim: #9a9ac0;
   --geo-border: rgba(255, 255, 255, 0.12);
+
+  --geo-grad-purple: linear-gradient(180deg, #b06bf0, var(--geo-purple));
+  --geo-grad-cyan: linear-gradient(180deg, #6fe8ff, var(--geo-cyan));
+  --geo-grad-pink: linear-gradient(180deg, #ff7fd0, var(--geo-pink));
 }
 
 * {
@@ -211,6 +215,17 @@ select.input {
   border: 1px solid var(--geo-border);
   border-radius: 14px;
   padding: 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--geo-purple), var(--geo-cyan));
+  opacity: 0.7;
 }
 
 .stat-value {
@@ -285,6 +300,80 @@ table.data-table {
 .icon-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   color: var(--geo-cyan);
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.metric-card {
+  background: rgba(18, 18, 43, 0.85);
+  border: 1px solid var(--geo-border);
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.metric-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 2px;
+  display: flex;
+  align-items: center;
+}
+
+.metric-card-hint {
+  color: var(--geo-text-dim);
+  font-size: 10.5px;
+  margin: 0 0 10px;
+}
+
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.bar-chart-col {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.bar-chart-col-clickable {
+  cursor: pointer;
+}
+
+.bar-chart-bar {
+  width: 100%;
+  max-width: 42px;
+  border-radius: 6px 6px 2px 2px;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.bar-chart-col-clickable:hover .bar-chart-bar {
+  opacity: 0.8;
+  transform: scaleX(1.06);
+}
+
+.bar-chart-label {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--geo-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .live-dot {
