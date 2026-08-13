@@ -118,6 +118,13 @@ export default function LevelEditor({
     );
   }
 
+  // Dos objetos "se tocan" (comparten X e Y) si no hay ni un pixel de hueco
+  // entre sus rectangulos — se pueden poner al lado, encima o debajo, pero
+  // nunca uno arriba del otro en el mismo lugar.
+  function rectsOverlap(a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }): boolean {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
   function onStripClick(e: React.MouseEvent<HTMLDivElement>) {
     const rect = stripRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -125,13 +132,26 @@ export default function LevelEditor({
     const x = Math.max(0, Math.min(length, screenXToLevelX(screenX)));
     const shape = DEFAULT_SHAPE[tool.type];
     const newObstacle: LevelObstacle = { type: tool.type, x, y: shape.y, w: shape.w, h: shape.h, ...(tool.imageUrl ? { imageUrl: tool.imageUrl } : {}) };
+    if (obstacles.some((o) => rectsOverlap(newObstacle, o))) {
+      setError("Ya hay un objeto ahí — colócalo al lado, arriba o abajo, no superpuesto.");
+      return;
+    }
+    setError("");
     setObstacles((prev) => [...prev, newObstacle]);
     setSelectedIndex(obstacles.length);
   }
 
   function updateSelected(patch: Partial<LevelObstacle>) {
     if (selectedIndex === null) return;
-    setObstacles((prev) => prev.map((o, i) => (i === selectedIndex ? { ...o, ...patch } : o)));
+    const current = obstacles[selectedIndex];
+    const updated = { ...current, ...patch };
+    const overlapsOther = obstacles.some((o, i) => i !== selectedIndex && rectsOverlap(updated, o));
+    if (overlapsOther) {
+      setError("Ese cambio superpondría este objeto con otro — colócalo al lado, arriba o abajo.");
+      return;
+    }
+    setError("");
+    setObstacles((prev) => prev.map((o, i) => (i === selectedIndex ? updated : o)));
   }
 
   function deleteSelected() {
