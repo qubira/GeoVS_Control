@@ -112,16 +112,23 @@ export function clearToken() {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<{ status: number; body: T }> {
   const token = loadToken();
-  const res = await fetch(`${SERVER_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
-  const body = (await res.json().catch(() => ({}))) as T;
-  return { status: res.status, body };
+  try {
+    const res = await fetch(`${SERVER_URL}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
+    });
+    const body = (await res.json().catch(() => ({}))) as T;
+    return { status: res.status, body };
+  } catch {
+    // Servidor inalcanzable (caido, sin red, cold-start de Render, etc).
+    // status 0 = "no hubo respuesta", distinto de un 401/403 real, para que
+    // los callers no confundan esto con una sesion invalida (ver AuthContext).
+    return { status: 0, body: { ok: false, error: "NETWORK_ERROR" } as T };
+  }
 }
 
 export const api = {

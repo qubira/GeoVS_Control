@@ -10,13 +10,29 @@ import RoleBadge from "./components/RoleBadge";
 type Tab = "dashboard" | "users" | "audit" | "waitlist";
 
 export default function App() {
-  const { account, loading, logout } = useAuth();
+  const { account, loading, networkError, logout, retry } = useAuth();
   const [tab, setTab] = useState<Tab>("dashboard");
 
   if (loading) {
     return (
       <div className="screen">
         <p className="subtitle">Cargando...</p>
+      </div>
+    );
+  }
+
+  if (networkError) {
+    return (
+      <div className="screen">
+        <div className="panel" style={{ maxWidth: 380, textAlign: "center" }}>
+          <p className="error-text" style={{ marginTop: 0 }}>
+            No se pudo conectar con el servidor.
+          </p>
+          <p className="subtitle">Verifica que esté corriendo (o que Render haya despertado) e intenta de nuevo.</p>
+          <button className="btn btn-primary" onClick={retry} style={{ width: "100%" }}>
+            Reintentar
+          </button>
+        </div>
       </div>
     );
   }

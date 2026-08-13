@@ -4,8 +4,10 @@ import { api, loadToken, saveToken, clearToken, type Account } from "../api/clie
 interface AuthValue {
   account: Account | null;
   loading: boolean;
+  networkError: boolean;
   login: (username: string, password: string) => Promise<string | null>;
   logout: () => void;
+  retry: () => void;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -13,23 +15,43 @@ const AuthContext = createContext<AuthValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
+  const [networkError, setNetworkError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       const token = loadToken();
       if (!token) {
         setLoading(false);
         return;
       }
+      setLoading(true);
       const { status, body } = await api.me();
+      if (cancelled) return;
       if (status === 200 && body.user) {
         setAccount(body.user);
+        setNetworkError(false);
+      } else if (status === 0) {
+        // Servidor inalcanzable: no se puede confirmar si el token es
+        // valido, asi que NO se borra (podria seguir siendolo cuando el
+        // servidor vuelva). Se muestra un error en vez de quedarse
+        // cargando para siempre.
+        setNetworkError(true);
       } else {
         clearToken();
+        setNetworkError(false);
       }
       setLoading(false);
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt]);
+
+  function retry() {
+    setAttempt((a) => a + 1);
+  }
 
   async function login(username: string, password: string): Promise<string | null> {
     const { status, body } = await api.login(username, password);
@@ -49,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccount(null);
   }
 
-  return <AuthContext.Provider value={{ account, loading, login, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ account, loading, networkError, login, logout, retry }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
