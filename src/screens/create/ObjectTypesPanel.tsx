@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { api, type CustomObjectType, type PhysicsType } from "../../api/client";
+import { api, UPLOAD_ERROR_MESSAGES, type CustomObjectType, type PhysicsType } from "../../api/client";
 
 const PHYSICS_LABELS: { value: PhysicsType; label: string }[] = [
   { value: "spike", label: "Triángulo" },
@@ -35,7 +35,7 @@ export default function ObjectTypesPanel() {
     try {
       const uploadRes = await api.uploadFile(file, "object");
       if (!uploadRes.body.url) {
-        setError("No se pudo subir la imagen.");
+        setError(UPLOAD_ERROR_MESSAGES[uploadRes.body.error || ""] || "No se pudo subir la imagen.");
         return;
       }
       const { status } = await api.createCustomObjectType({ name: name.trim(), imageUrl: uploadRes.body.url, physicsType });

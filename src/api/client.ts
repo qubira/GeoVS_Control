@@ -134,6 +134,7 @@ export interface CustomLevel {
   speedX: number | null;
   jumpVelocity: number | null;
   backgroundImageUrl: string | null;
+  backgroundScale: number | null;
   musicUrl: string | null;
   obstacles: LevelObstacle[];
   checkpoints: number[];
@@ -149,10 +150,17 @@ export interface CustomLevelInput {
   speedX?: number | null;
   jumpVelocity?: number | null;
   backgroundImageUrl?: string | null;
+  backgroundScale?: number | null;
   musicUrl?: string | null;
   obstacles: LevelObstacle[];
   checkpoints?: number[];
 }
+
+export const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
+  FILE_TOO_LARGE: "El archivo es muy grande (máximo 25MB).",
+  INVALID_FILE_TYPE: "Ese tipo de archivo no es válido para esto.",
+  NETWORK_ERROR: "No se pudo conectar con el servidor.",
+};
 
 const TOKEN_KEY = "geovs_control_token_v1";
 

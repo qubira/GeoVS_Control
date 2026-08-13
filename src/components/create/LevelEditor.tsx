@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useEffect } from "react";
-import { api, type CustomLevel, type CustomObjectType, type LevelObstacle, type PhysicsType } from "../../api/client";
+import { api, UPLOAD_ERROR_MESSAGES, type CustomLevel, type CustomObjectType, type LevelObstacle, type PhysicsType } from "../../api/client";
 import WaveformCanvas from "./WaveformCanvas";
 
 // Valores globales del juego (server/src/config.js), duplicados aca solo
@@ -20,10 +20,11 @@ const DEFAULT_SHAPE: Record<PhysicsType, { w: number; h: number; y: number }> = 
   platform: { w: 100, h: 20, y: 340 },
 };
 
-const PX_PER_SECOND = 80; // escala visual del editor, no tiene relacion con la fisica
-const STRIP_HEIGHT = 220;
-const WORLD_HEIGHT_REF = 560; // GROUND_Y(500) + PLAYER_SIZE(40) + margen
-const V_SCALE = STRIP_HEIGHT / WORLD_HEIGHT_REF;
+const BASE_PX_PER_SECOND = 80; // escala visual del editor a zoom 1x, no tiene relacion con la fisica
+const STRIP_VIEWPORT_HEIGHT = 260; // alto visible fijo del recuadro (con scroll si el contenido es mas alto)
+const BASE_STRIP_HEIGHT = 220; // alto del contenido a zoom 1x
+const WORLD_HEIGHT_REF = 560; // GROUND_Y(500) + PLAYER_SIZE(40) + margen, mismo mundo que el juego real
+const ZOOM_STEPS = [0.5, 0.75, 1, 1.5, 2, 3];
 
 interface PaletteChoice {
   type: PhysicsType;
@@ -47,11 +48,13 @@ export default function LevelEditor({
   const [speedX, setSpeedX] = useState<number | null>(level?.speedX ?? null);
   const [jumpVelocity, setJumpVelocity] = useState<number | null>(level?.jumpVelocity ?? null);
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(level?.backgroundImageUrl ?? null);
+  const [backgroundScale, setBackgroundScale] = useState<number>(level?.backgroundScale ?? 1);
   const [musicUrl, setMusicUrl] = useState<string | null>(level?.musicUrl ?? null);
   const [obstacles, setObstacles] = useState<LevelObstacle[]>(level?.obstacles || []);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [tool, setTool] = useState<PaletteChoice>({ type: "spike", label: "Triángulo", swatchColor: "#ff6b4a" });
   const [objectTypes, setObjectTypes] = useState<CustomObjectType[]>([]);
+  const [zoomIndex, setZoomIndex] = useState(2); // ZOOM_STEPS[2] = 1x
   const [uploadingBg, setUploadingBg] = useState(false);
   const [uploadingMusic, setUploadingMusic] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -64,7 +67,11 @@ export default function LevelEditor({
 
   const effectiveSpeed = speedX ?? DEFAULT_SPEED_X;
   const length = Math.round(effectiveSpeed * durationSec);
-  const totalWidthPx = Math.max(400, durationSec * PX_PER_SECOND);
+  const zoom = ZOOM_STEPS[zoomIndex];
+  const pxPerSecond = BASE_PX_PER_SECOND * zoom;
+  const totalWidthPx = Math.max(400, durationSec * pxPerSecond);
+  const stripContentHeight = BASE_STRIP_HEIGHT * zoom;
+  const vScale = stripContentHeight / WORLD_HEIGHT_REF;
 
   function levelXToScreenX(x: number) {
     return (x / length) * totalWidthPx;
@@ -110,11 +117,12 @@ export default function LevelEditor({
 
   async function onUpload(file: File, kind: "background" | "music") {
     const setUploading = kind === "background" ? setUploadingBg : setUploadingMusic;
+    setError("");
     setUploading(true);
     try {
       const { body } = await api.uploadFile(file, kind);
       if (!body.url) {
-        setError("No se pudo subir el archivo.");
+        setError(UPLOAD_ERROR_MESSAGES[body.error || ""] || "No se pudo subir el archivo.");
         return;
       }
       if (kind === "background") setBackgroundImageUrl(body.url);
@@ -142,6 +150,7 @@ export default function LevelEditor({
         speedX,
         jumpVelocity,
         backgroundImageUrl,
+        backgroundScale,
         musicUrl,
         obstacles,
       };
@@ -255,6 +264,23 @@ export default function LevelEditor({
               }}
             />
           </label>
+          {backgroundImageUrl && (
+            <div style={{ marginTop: 10 }}>
+              <div className="row-between" style={{ marginBottom: 4 }}>
+                <span style={{ fontSize: 11, color: "var(--geo-text-dim)" }}>Tamaño del fondo</span>
+                <span style={{ fontSize: 11, color: "var(--geo-text-dim)" }}>{Math.round(backgroundScale * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min={0.3}
+                max={4}
+                step={0.1}
+                value={backgroundScale}
+                onChange={(e) => setBackgroundScale(Number(e.target.value))}
+                style={{ width: "100%" }}
+              />
+            </div>
+          )}
         </div>
 
         <div className="panel" style={{ flex: 1, minWidth: 220 }}>
@@ -263,7 +289,7 @@ export default function LevelEditor({
           </div>
           {musicUrl && <audio src={musicUrl} controls style={{ width: "100%", marginBottom: 8, height: 32 }} />}
           <label className="upload-dropzone" style={{ display: "block" }}>
-            {uploadingMusic ? "Subiendo..." : musicUrl ? "Cambiar música" : "Subir música (mp3/wav)"}
+            {uploadingMusic ? "Subiendo..." : musicUrl ? "Cambiar música" : "Subir música (mp3/wav, hasta 25MB)"}
             <input
               type="file"
               accept="audio/*"
@@ -305,15 +331,44 @@ export default function LevelEditor({
           }}
         />
 
+        <div className="row-between" style={{ margin: "8px 0 4px" }}>
+          <span style={{ fontSize: 11, color: "var(--geo-text-dim)" }}>Vista previa de la pista (fondo + objetos)</span>
+          <span className="row" style={{ gap: 4, margin: 0 }}>
+            <button type="button" className="icon-btn" onClick={() => setZoomIndex((i) => Math.max(0, i - 1))} disabled={zoomIndex === 0} title="Alejar">
+              −
+            </button>
+            <span style={{ fontSize: 11, color: "var(--geo-text-dim)", width: 40, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => setZoomIndex((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))}
+              disabled={zoomIndex === ZOOM_STEPS.length - 1}
+              title="Acercar (más detalle)"
+            >
+              +
+            </button>
+          </span>
+        </div>
+
         <div
           ref={stripRef}
           className="level-strip"
-          style={{ height: STRIP_HEIGHT, marginTop: 8 }}
+          style={{ height: STRIP_VIEWPORT_HEIGHT, overflowY: "auto" }}
           onClick={onStripClick}
         >
-          <div style={{ position: "relative", width: totalWidthPx, height: STRIP_HEIGHT }}>
+          <div
+            style={{
+              position: "relative",
+              width: totalWidthPx,
+              height: stripContentHeight,
+              backgroundImage: backgroundImageUrl ? `url(${backgroundImageUrl})` : undefined,
+              backgroundRepeat: "repeat-x",
+              backgroundSize: `auto ${100 * backgroundScale}%`,
+              backgroundPosition: "left center",
+            }}
+          >
             {/* linea de suelo, referencia visual */}
-            <div style={{ position: "absolute", left: 0, right: 0, top: 500 * V_SCALE, height: 1, background: "rgba(139,47,224,0.4)" }} />
+            <div style={{ position: "absolute", left: 0, right: 0, top: 500 * vScale, height: 1, background: "rgba(139,47,224,0.4)" }} />
             {obstacles.map((o, i) => {
               const meta = PHYSICS_LABELS.find((p) => p.value === o.type);
               return (
@@ -322,9 +377,9 @@ export default function LevelEditor({
                   className={`level-strip-obstacle ${selectedIndex === i ? "selected" : ""}`}
                   style={{
                     left: levelXToScreenX(o.x),
-                    top: o.y * V_SCALE,
+                    top: o.y * vScale,
                     width: Math.max(4, levelXToScreenX(o.x + o.w) - levelXToScreenX(o.x)),
-                    height: Math.max(4, o.h * V_SCALE),
+                    height: Math.max(4, o.h * vScale),
                     background: o.imageUrl ? `url(${o.imageUrl}) center/cover` : meta?.color || "#888",
                   }}
                   onClick={(e) => {
@@ -337,7 +392,7 @@ export default function LevelEditor({
           </div>
         </div>
         <p className="subtitle" style={{ margin: "8px 0 0", fontSize: 11 }}>
-          Click en la franja para agregar el objeto seleccionado. Click en un objeto ya puesto para editarlo o borrarlo.
+          Click en la franja para agregar el objeto seleccionado. Click en un objeto ya puesto para editarlo o borrarlo. Usa +/− para acercar y ver mejor el detalle.
         </p>
       </div>
 

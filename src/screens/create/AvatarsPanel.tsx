@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { api, type CustomAvatar } from "../../api/client";
+import { api, UPLOAD_ERROR_MESSAGES, type CustomAvatar } from "../../api/client";
 
 export default function AvatarsPanel() {
   const [avatars, setAvatars] = useState<CustomAvatar[]>([]);
@@ -28,7 +28,7 @@ export default function AvatarsPanel() {
     try {
       const uploadRes = await api.uploadFile(file, "avatar");
       if (!uploadRes.body.url) {
-        setError("No se pudo subir la imagen.");
+        setError(UPLOAD_ERROR_MESSAGES[uploadRes.body.error || ""] || "No se pudo subir la imagen.");
         return;
       }
       const { status, body } = await api.createCustomAvatar({ name: name.trim(), imageUrl: uploadRes.body.url });
