@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { api, type Account, type AuditLogEntry, type UserConnections } from "../api/client";
 import { formatDate, formatDay, formatDuration } from "../utils/format";
+import RangeFilter, { type RangeValue } from "./RangeFilter";
+import BarChart from "./BarChart";
 
 const FIELD_LABELS: Record<string, string> = {
   account: "Cuenta",
@@ -16,6 +18,8 @@ export default function UserHistoryModal({ user, onClose }: { user: Account; onC
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [conn, setConn] = useState<UserConnections | null>(null);
   const [loading, setLoading] = useState(true);
+  const [peakRange, setPeakRange] = useState<RangeValue>({ range: "week", date: new Date().toISOString().slice(0, 10) });
+  const [peakHours, setPeakHours] = useState<number[] | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -27,6 +31,17 @@ export default function UserHistoryModal({ user, onClose }: { user: Account; onC
       setLoading(false);
     });
   }, [user.id]);
+
+  useEffect(() => {
+    setPeakHours(null);
+    api.userPeakHours(user.id, peakRange).then(({ body }) => {
+      const buckets = Array(24).fill(0);
+      (body.timestamps || []).forEach((ts) => {
+        buckets[new Date(ts).getHours()] += 1;
+      });
+      setPeakHours(buckets);
+    });
+  }, [user.id, peakRange.range, peakRange.date]);
 
   return (
     <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -47,7 +62,7 @@ export default function UserHistoryModal({ user, onClose }: { user: Account; onC
             {conn && (
               <>
                 <div className="label" style={{ marginTop: 0 }}>
-                  Tiempo de conexión
+                  Tiempo de conexión <span style={{ color: "var(--geo-text-dim)", textTransform: "none" }}>(incluye menús)</span>
                 </div>
                 <div className="stat-grid" style={{ marginBottom: 8 }}>
                   <div className="stat-card" style={{ padding: 12 }}>
@@ -61,6 +76,24 @@ export default function UserHistoryModal({ user, onClose }: { user: Account; onC
                       {conn.byDay[0] ? formatDuration(conn.byDay[0].seconds) : "0s"}
                     </div>
                     <div className="stat-label">{conn.byDay[0] ? formatDay(conn.byDay[0].day) : "Sin datos"}</div>
+                  </div>
+                </div>
+
+                <div className="label">
+                  Tiempo jugado <span style={{ color: "var(--geo-text-dim)", textTransform: "none" }}>(solo dentro de un nivel)</span>
+                </div>
+                <div className="stat-grid" style={{ marginBottom: 16 }}>
+                  <div className="stat-card" style={{ padding: 12 }}>
+                    <div className="stat-value" style={{ fontSize: 20 }}>
+                      {formatDuration(conn.play.totalSec)}
+                    </div>
+                    <div className="stat-label">Acumulado total</div>
+                  </div>
+                  <div className="stat-card" style={{ padding: 12 }}>
+                    <div className="stat-value" style={{ fontSize: 20 }}>
+                      {conn.play.byDay[0] ? formatDuration(conn.play.byDay[0].seconds) : "0s"}
+                    </div>
+                    <div className="stat-label">{conn.play.byDay[0] ? formatDay(conn.play.byDay[0].day) : "Sin datos"}</div>
                   </div>
                 </div>
 
@@ -109,6 +142,23 @@ export default function UserHistoryModal({ user, onClose }: { user: Account; onC
                   </>
                 )}
               </>
+            )}
+
+            <div className="label">Horas pico jugando</div>
+            <RangeFilter value={peakRange} onChange={setPeakRange} />
+            {peakHours === null ? (
+              <p className="subtitle" style={{ margin: "0 0 16px" }}>
+                Cargando...
+              </p>
+            ) : (
+              <div style={{ marginBottom: 16 }}>
+                <BarChart
+                  data={peakHours.map((v, h) => ({ label: String(h), value: v }))}
+                  height={90}
+                  formatValue={(v) => `${v} sesiones`}
+                  emptyLabel="Sin sesiones de juego en este rango."
+                />
+              </div>
             )}
 
             <div className="label">Cambios registrados</div>

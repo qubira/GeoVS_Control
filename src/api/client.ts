@@ -26,9 +26,40 @@ export interface AuditLogEntry {
 export interface ConnectionsSummary {
   totalUsers: number;
   byRole: { role: string; count: number }[];
-  connectionsToday: number;
-  byCountry: { country: string; count: number }[];
+  connectionsInRange: number;
   topByTotalTime: { userId: string; username: string; seconds: number }[];
+}
+
+export interface RangeParams {
+  range?: "day" | "week" | "month";
+  date?: string;
+}
+
+function rangeQS(params: RangeParams = {}): string {
+  const qs = new URLSearchParams();
+  if (params.range) qs.set("range", params.range);
+  if (params.date) qs.set("date", params.date);
+  return qs.toString() ? `?${qs}` : "";
+}
+
+export interface OnlineByCountry {
+  totalOnline: number;
+  byCountry: { country: string; count: number }[];
+}
+
+export interface AccountsByCountry {
+  byCountry: { country: string; accounts: number }[];
+}
+
+export interface LevelsPopularity {
+  overall: { levelId: string; levelName: string; sessionCount: number }[];
+  byCountry: { levelId: string; country: string; count: number }[];
+  topPlayers: { levelId: string; userId: string; username: string; sessionCount: number }[];
+}
+
+export interface PeakHours {
+  source: string;
+  timestamps: string[];
 }
 
 export interface CountrySession {
@@ -61,6 +92,10 @@ export interface UserConnections {
     disconnectedAt: string | null;
     durationSec: number | null;
   }[];
+  play: {
+    totalSec: number;
+    byDay: { day: string; seconds: number }[];
+  };
 }
 
 const TOKEN_KEY = "geovs_control_token_v1";
@@ -131,10 +166,19 @@ export const api = {
     return request<{ ok: boolean; logs?: AuditLogEntry[]; error?: string }>(`/admin/audit-logs${suffix}`);
   },
 
-  connectionsSummary: () => request<{ ok: boolean } & Partial<ConnectionsSummary> & { error?: string }>("/admin/connections/summary"),
+  connectionsSummary: (params: RangeParams = {}) =>
+    request<{ ok: boolean } & Partial<ConnectionsSummary> & { error?: string }>(`/admin/connections/summary${rangeQS(params)}`),
   userConnections: (id: string) => request<{ ok: boolean } & Partial<UserConnections> & { error?: string }>(`/admin/users/${id}/connections`),
   connectionsByCountry: (country: string) =>
     request<{ ok: boolean; sessions?: CountrySession[]; error?: string }>(`/admin/connections/by-country?country=${encodeURIComponent(country)}`),
+  connectionsOnlineByCountry: () =>
+    request<{ ok: boolean } & Partial<OnlineByCountry> & { error?: string }>("/admin/connections/online-by-country"),
+  accountsByCountry: (params: RangeParams = {}) =>
+    request<{ ok: boolean } & Partial<AccountsByCountry> & { error?: string }>(`/admin/accounts/with-session-by-country${rangeQS(params)}`),
+  levelsPopularity: (params: RangeParams = {}) =>
+    request<{ ok: boolean } & Partial<LevelsPopularity> & { error?: string }>(`/admin/levels/popularity${rangeQS(params)}`),
+  userPeakHours: (id: string, params: RangeParams = {}) =>
+    request<{ ok: boolean } & Partial<PeakHours> & { error?: string }>(`/admin/users/${id}/peak-hours${rangeQS(params)}`),
 
   waitlist: () => request<{ ok: boolean; entries?: WaitlistEntry[]; error?: string }>("/admin/waitlist"),
   deleteWaitlistEntry: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/waitlist/${id}`, { method: "DELETE" }),
