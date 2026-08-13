@@ -1,0 +1,125 @@
+import { useEffect, useState } from "react";
+import { api, type Account } from "../api/client";
+import RoleBadge from "../components/RoleBadge";
+import CreateUserModal from "../components/CreateUserModal";
+import EditUserModal from "../components/EditUserModal";
+import UserHistoryModal from "../components/UserHistoryModal";
+import { formatDate } from "../utils/format";
+
+export default function UsersScreen() {
+  const [users, setUsers] = useState<Account[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [editing, setEditing] = useState<Account | null>(null);
+  const [viewingHistory, setViewingHistory] = useState<Account | null>(null);
+
+  async function refresh() {
+    setLoading(true);
+    const { body } = await api.listUsers({ search: search || undefined, role: roleFilter || undefined });
+    setUsers(body.users || []);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    const t = setTimeout(refresh, 250); // debounce de busqueda
+    return () => clearTimeout(t);
+  }, [search, roleFilter]);
+
+  return (
+    <div>
+      <div className="row-between" style={{ marginBottom: 18 }}>
+        <div>
+          <h1 className="title">Cuentas</h1>
+          <p className="subtitle" style={{ margin: 0 }}>
+            {users.length} cuenta{users.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+          + Nueva cuenta
+        </button>
+      </div>
+
+      <div className="row" style={{ marginBottom: 16 }}>
+        <input
+          className="input"
+          placeholder="Buscar por usuario o correo..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ minWidth: 260 }}
+        />
+        <select className="input" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+          <option value="">Todos los roles</option>
+          <option value="player">Jugador</option>
+          <option value="developer">Desarrollador</option>
+          <option value="moderator">Moderador</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+
+      <div className="panel" style={{ overflowX: "auto" }}>
+        {loading ? (
+          <p className="subtitle">Cargando...</p>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Correo</th>
+                <th>Edad</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Creada</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id}>
+                  <td style={{ fontWeight: 700 }}>{u.username}</td>
+                  <td style={{ color: "var(--geo-text-dim)" }}>{u.email}</td>
+                  <td>{u.age}</td>
+                  <td>
+                    <RoleBadge role={u.role} />
+                  </td>
+                  <td>
+                    <span className={`badge ${u.blocked ? "badge-blocked" : "badge-ok"}`}>{u.blocked ? "Bloqueada" : "Activa"}</span>
+                  </td>
+                  <td style={{ color: "var(--geo-text-dim)" }}>{formatDate(u.createdAt)}</td>
+                  <td>
+                    <button className="btn btn-secondary" style={{ padding: "6px 12px" }} onClick={() => setEditing(u)}>
+                      Gestionar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {users.length === 0 && (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: "center", color: "var(--geo-text-dim)", padding: 24 }}>
+                    Sin resultados.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {showCreate && <CreateUserModal onClose={() => setShowCreate(false)} onCreated={refresh} />}
+      {editing && (
+        <EditUserModal
+          user={editing}
+          onClose={() => setEditing(null)}
+          onSaved={refresh}
+          onDeleted={refresh}
+          onViewHistory={() => {
+            setViewingHistory(editing);
+            setEditing(null);
+          }}
+        />
+      )}
+      {viewingHistory && <UserHistoryModal user={viewingHistory} onClose={() => setViewingHistory(null)} />}
+    </div>
+  );
+}
