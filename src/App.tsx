@@ -5,9 +5,11 @@ import DashboardScreen from "./screens/DashboardScreen";
 import UsersScreen from "./screens/UsersScreen";
 import AuditLogScreen from "./screens/AuditLogScreen";
 import WaitlistScreen from "./screens/WaitlistScreen";
+import CreateScreen from "./screens/CreateScreen";
 import RoleBadge from "./components/RoleBadge";
+import logo from "../imagen/logo_geovs.png";
 
-type Tab = "dashboard" | "users" | "audit" | "waitlist";
+type Tab = "dashboard" | "users" | "audit" | "waitlist" | "create";
 
 export default function App() {
   const { account, loading, networkError, logout, retry } = useAuth();
@@ -43,6 +45,7 @@ export default function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="sidebar-brand">
+          <img src={logo} alt="GeoVS" style={{ height: 28, width: "auto", verticalAlign: "middle", marginRight: 8 }} />
           GeoVS <span style={{ color: "var(--geo-cyan)" }}>Control</span>
         </div>
 
@@ -57,6 +60,9 @@ export default function App() {
         </button>
         <button className={`nav-item ${tab === "waitlist" ? "active" : ""}`} onClick={() => setTab("waitlist")}>
           📝 Lista de espera
+        </button>
+        <button className={`nav-item ${tab === "create" ? "active" : ""}`} onClick={() => setTab("create")}>
+          🛠️ Crear
         </button>
 
         <div style={{ flex: 1 }} />
@@ -74,6 +80,7 @@ export default function App() {
         {tab === "users" && <UsersScreen />}
         {tab === "audit" && <AuditLogScreen />}
         {tab === "waitlist" && <WaitlistScreen />}
+        {tab === "create" && <CreateScreen />}
       </main>
     </div>
   );

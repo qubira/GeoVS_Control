@@ -98,6 +98,60 @@ export interface UserConnections {
   };
 }
 
+export interface CustomAvatar {
+  id: string;
+  name: string;
+  imageUrl: string;
+  kind: string;
+  createdAt: string;
+}
+
+export type PhysicsType = "spike" | "block" | "platform";
+
+export interface CustomObjectType {
+  id: string;
+  name: string;
+  imageUrl: string;
+  physicsType: PhysicsType;
+  createdAt: string;
+}
+
+export interface LevelObstacle {
+  type: PhysicsType;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  imageUrl?: string;
+}
+
+export interface CustomLevel {
+  id: string;
+  name: string;
+  length: number;
+  durationSec: number;
+  speedX: number | null;
+  jumpVelocity: number | null;
+  backgroundImageUrl: string | null;
+  musicUrl: string | null;
+  obstacles: LevelObstacle[];
+  checkpoints: number[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomLevelInput {
+  name: string;
+  durationSec: number;
+  speedX?: number | null;
+  jumpVelocity?: number | null;
+  backgroundImageUrl?: string | null;
+  musicUrl?: string | null;
+  obstacles: LevelObstacle[];
+  checkpoints?: number[];
+}
+
 const TOKEN_KEY = "geovs_control_token_v1";
 
 export function saveToken(token: string) {
@@ -189,4 +243,52 @@ export const api = {
 
   waitlist: () => request<{ ok: boolean; entries?: WaitlistEntry[]; error?: string }>("/admin/waitlist"),
   deleteWaitlistEntry: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/waitlist/${id}`, { method: "DELETE" }),
+
+  // --- Modulo "Crear": avatares, objetos y niveles personalizados --------
+
+  uploadFile: (file: File, kind: "avatar" | "object" | "background" | "music") => {
+    const token = loadToken();
+    const form = new FormData();
+    form.append("file", file);
+    form.append("kind", kind);
+    return fetch(`${SERVER_URL}/admin/uploads`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      // OJO: no fijar Content-Type a mano — el navegador arma el boundary
+      // multipart automaticamente a partir del FormData.
+      body: form,
+    })
+      .then(async (res) => ({ status: res.status, body: (await res.json().catch(() => ({}))) as { ok: boolean; url?: string; error?: string } }))
+      .catch(() => ({ status: 0, body: { ok: false, error: "NETWORK_ERROR" } as { ok: boolean; url?: string; error?: string } }));
+  },
+
+  listCustomAvatars: () => request<{ ok: boolean; avatars?: CustomAvatar[]; error?: string }>("/admin/custom-avatars"),
+  createCustomAvatar: (input: { name: string; imageUrl: string }) =>
+    request<{ ok: boolean; avatar?: CustomAvatar; error?: string }>("/admin/custom-avatars", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  deleteCustomAvatar: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/custom-avatars/${id}`, { method: "DELETE" }),
+
+  listCustomObjectTypes: () => request<{ ok: boolean; objectTypes?: CustomObjectType[]; error?: string }>("/admin/custom-object-types"),
+  createCustomObjectType: (input: { name: string; imageUrl: string; physicsType: PhysicsType }) =>
+    request<{ ok: boolean; objectType?: CustomObjectType; error?: string }>("/admin/custom-object-types", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  deleteCustomObjectType: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/custom-object-types/${id}`, { method: "DELETE" }),
+
+  listCustomLevels: () => request<{ ok: boolean; levels?: CustomLevel[]; error?: string }>("/admin/custom-levels"),
+  getCustomLevel: (id: string) => request<{ ok: boolean; level?: CustomLevel; error?: string }>(`/admin/custom-levels/${id}`),
+  createCustomLevel: (input: CustomLevelInput) =>
+    request<{ ok: boolean; level?: CustomLevel; error?: string }>("/admin/custom-levels", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateCustomLevel: (id: string, input: CustomLevelInput) =>
+    request<{ ok: boolean; level?: CustomLevel; error?: string }>(`/admin/custom-levels/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
+  deleteCustomLevel: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/custom-levels/${id}`, { method: "DELETE" }),
 };

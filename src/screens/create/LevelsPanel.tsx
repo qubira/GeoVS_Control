@@ -1,0 +1,105 @@
+import { useEffect, useState } from "react";
+import { api, type CustomLevel } from "../../api/client";
+import LevelEditor from "../../components/create/LevelEditor";
+
+export default function LevelsPanel() {
+  const [levels, setLevels] = useState<CustomLevel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<CustomLevel | "new" | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+
+  function load() {
+    setLoading(true);
+    api.listCustomLevels().then(({ body }) => {
+      setLevels(body.levels || []);
+      setLoading(false);
+    });
+  }
+  useEffect(load, []);
+
+  async function onDelete(id: string) {
+    await api.deleteCustomLevel(id);
+    setConfirmingDelete(null);
+    load();
+  }
+
+  if (editing) {
+    return (
+      <LevelEditor
+        level={editing === "new" ? null : editing}
+        onClose={() => setEditing(null)}
+        onSaved={() => {
+          setEditing(null);
+          load();
+        }}
+      />
+    );
+  }
+
+  return (
+    <div>
+      <div className="row-between" style={{ marginBottom: 16 }}>
+        <p className="subtitle" style={{ margin: 0 }}>
+          Pistas creadas desde el panel — se agregan a las 3 pistas fijas del juego.
+        </p>
+        <button className="btn btn-primary" onClick={() => setEditing("new")} style={{ width: "auto" }}>
+          + Nueva pista
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="subtitle">Cargando...</p>
+      ) : (
+        <div className="panel" style={{ overflowX: "auto" }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Duración</th>
+                <th>Obstáculos</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {levels.map((l) => (
+                <tr key={l.id}>
+                  <td style={{ fontWeight: 700 }}>{l.name}</td>
+                  <td style={{ color: "var(--geo-text-dim)" }}>{l.durationSec}s</td>
+                  <td style={{ color: "var(--geo-text-dim)" }}>{l.obstacles.length}</td>
+                  <td style={{ textAlign: "right" }}>
+                    <span style={{ display: "inline-flex", gap: 6 }}>
+                      <button className="btn btn-secondary" style={{ width: "auto" }} onClick={() => setEditing(l)}>
+                        Editar
+                      </button>
+                      {confirmingDelete === l.id ? (
+                        <>
+                          <button className="btn btn-danger" style={{ width: "auto" }} onClick={() => onDelete(l.id)}>
+                            Sí, eliminar
+                          </button>
+                          <button className="btn btn-secondary" style={{ width: "auto" }} onClick={() => setConfirmingDelete(null)}>
+                            Cancelar
+                          </button>
+                        </>
+                      ) : (
+                        <button className="btn btn-danger" style={{ width: "auto" }} onClick={() => setConfirmingDelete(l.id)}>
+                          🗑️
+                        </button>
+                      )}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {levels.length === 0 && (
+                <tr>
+                  <td colSpan={4} style={{ textAlign: "center", color: "var(--geo-text-dim)", padding: 24 }}>
+                    Todavía no hay pistas personalizadas.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
