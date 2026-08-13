@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type Account } from "../api/client";
 import RoleBadge from "../components/RoleBadge";
+import RoleSelect from "../components/RoleSelect";
 import CreateUserModal from "../components/CreateUserModal";
 import EditUserModal from "../components/EditUserModal";
 import UserHistoryModal from "../components/UserHistoryModal";
@@ -49,13 +50,9 @@ export default function UsersScreen() {
           onChange={(e) => setSearch(e.target.value)}
           style={{ minWidth: 260 }}
         />
-        <select className="input" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-          <option value="">Todos los roles</option>
-          <option value="player">Jugador</option>
-          <option value="developer">Desarrollador</option>
-          <option value="moderator">Moderador</option>
-          <option value="admin">Administrador</option>
-        </select>
+        <div style={{ width: 200 }}>
+          <RoleSelect value={roleFilter} onChange={setRoleFilter} allowAll />
+        </div>
       </div>
 
       <div className="panel" style={{ overflowX: "auto" }}>

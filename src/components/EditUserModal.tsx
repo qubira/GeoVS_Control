@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api, type Account } from "../api/client";
 import { useAuth } from "../state/AuthContext";
+import RoleSelect from "./RoleSelect";
 
 const ERROR_MESSAGES: Record<string, string> = {
   EMAIL_IN_USE: "Ese correo ya está en uso.",
@@ -125,18 +126,7 @@ export default function EditUserModal({
         />
 
         <div className="label">Rol</div>
-        <select
-          className="input"
-          style={{ width: "100%" }}
-          value={role}
-          onChange={(e) => setRole(e.target.value as Account["role"])}
-          disabled={!isAdmin || isSelf}
-        >
-          <option value="player">Jugador</option>
-          <option value="developer">Desarrollador</option>
-          <option value="moderator">Moderador</option>
-          <option value="admin">Administrador</option>
-        </select>
+        <RoleSelect value={role} onChange={(v) => setRole(v as Account["role"])} disabled={!isAdmin || isSelf} />
         {isSelf && <p style={{ color: "var(--geo-text-dim)", fontSize: 11, marginTop: 4 }}>No puedes cambiar tu propio rol.</p>}
 
         <label className="row" style={{ marginTop: 14, cursor: "pointer" }}>

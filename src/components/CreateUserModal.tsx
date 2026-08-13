@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../api/client";
 import { useAuth } from "../state/AuthContext";
+import RoleSelect from "./RoleSelect";
 
 const ERROR_MESSAGES: Record<string, string> = {
   EMAIL_IN_USE: "Ese correo ya está en uso.",
@@ -81,12 +82,7 @@ export default function CreateUserModal({ onClose, onCreated }: { onClose: () =>
         <input className="input" style={{ width: "100%" }} type="number" value={age} onChange={(e) => setAge(e.target.value)} min={5} max={100} required />
 
         <div className="label">Rol</div>
-        <select className="input" style={{ width: "100%" }} value={role} onChange={(e) => setRole(e.target.value)} disabled={!isAdmin}>
-          <option value="player">Jugador</option>
-          <option value="developer">Desarrollador</option>
-          <option value="moderator">Moderador</option>
-          <option value="admin">Administrador</option>
-        </select>
+        <RoleSelect value={role} onChange={setRole} disabled={!isAdmin} />
         {!isAdmin && (
           <p style={{ color: "var(--geo-text-dim)", fontSize: 11, marginTop: 4 }}>
             Solo un administrador puede crear cuentas con rol distinto a jugador.
