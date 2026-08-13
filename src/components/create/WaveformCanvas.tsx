@@ -7,25 +7,37 @@ export default function WaveformCanvas({
   musicUrl,
   width,
   height = 64,
+  trimStartSec,
+  trimEndSec,
   onDurationDetected,
 }: {
   musicUrl?: string | null;
   width: number;
   height?: number;
+  /** Si se pasan, solo se dibuja ese tramo del archivo (estirado a `width`) —
+   * usado por la linea de tiempo principal, que trabaja sobre la musica ya
+   * recortada. Sin estos props se dibuja el archivo completo (usado en el
+   * mini-resumen de recorte). */
+  trimStartSec?: number;
+  trimEndSec?: number | null;
   onDurationDetected?: (seconds: number) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [peaks, setPeaks] = useState<number[] | null>(null);
+  const [fullDuration, setFullDuration] = useState<number | null>(null);
 
   useEffect(() => {
     if (!musicUrl) {
       setPeaks(null);
+      setFullDuration(null);
       return;
     }
-    const cached = peaksCache.get(musicUrl);
-    if (cached) {
-      setPeaks(cached);
-      if (durationCache.has(musicUrl)) onDurationDetected?.(durationCache.get(musicUrl)!);
+    const cachedPeaks = peaksCache.get(musicUrl);
+    const cachedDuration = durationCache.get(musicUrl);
+    if (cachedPeaks && cachedDuration !== undefined) {
+      setPeaks(cachedPeaks);
+      setFullDuration(cachedDuration);
+      onDurationDetected?.(cachedDuration);
       return;
     }
     let cancelled = false;
@@ -40,7 +52,10 @@ export default function WaveformCanvas({
       .then((audioBuffer) => {
         if (cancelled) return;
         const data = audioBuffer.getChannelData(0);
-        const buckets = 400;
+        // ~8 barras por segundo del archivo COMPLETO (independiente del
+        // recorte, que solo afecta que porcion se dibuja despues) para que
+        // se vea como una forma de onda de verdad y no bloques gruesos.
+        const buckets = Math.min(4000, Math.max(400, Math.round(audioBuffer.duration * 8)));
         const bucketSize = Math.max(1, Math.floor(data.length / buckets));
         const result: number[] = [];
         for (let i = 0; i < buckets; i++) {
@@ -55,6 +70,7 @@ export default function WaveformCanvas({
         peaksCache.set(musicUrl, result);
         durationCache.set(musicUrl, audioBuffer.duration);
         setPeaks(result);
+        setFullDuration(audioBuffer.duration);
         onDurationDetected?.(audioBuffer.duration);
       })
       .catch(() => setPeaks([]));
@@ -71,13 +87,22 @@ export default function WaveformCanvas({
     if (!ctx) return;
     ctx.clearRect(0, 0, width, height);
     if (!peaks || peaks.length === 0) return;
-    const barW = width / peaks.length;
+
+    let visible = peaks;
+    if (trimStartSec !== undefined && fullDuration) {
+      const end = trimEndSec ?? fullDuration;
+      const startIdx = Math.max(0, Math.floor((trimStartSec / fullDuration) * peaks.length));
+      const endIdx = Math.min(peaks.length, Math.ceil((end / fullDuration) * peaks.length));
+      visible = peaks.slice(startIdx, Math.max(startIdx + 1, endIdx));
+    }
+
+    const barW = width / visible.length;
     ctx.fillStyle = "rgba(34, 211, 238, 0.65)";
-    peaks.forEach((p, i) => {
+    visible.forEach((p, i) => {
       const h = Math.max(1, p * height);
       ctx.fillRect(i * barW, (height - h) / 2, Math.max(1, barW - 1), h);
     });
-  }, [peaks, width, height]);
+  }, [peaks, width, height, trimStartSec, trimEndSec, fullDuration]);
 
   if (!musicUrl) {
     return (

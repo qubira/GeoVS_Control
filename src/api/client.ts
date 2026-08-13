@@ -136,6 +136,8 @@ export interface CustomLevel {
   backgroundImageUrl: string | null;
   backgroundScale: number | null;
   musicUrl: string | null;
+  musicStartSec: number;
+  musicEndSec: number | null;
   obstacles: LevelObstacle[];
   checkpoints: number[];
   published: boolean;
@@ -152,6 +154,8 @@ export interface CustomLevelInput {
   backgroundImageUrl?: string | null;
   backgroundScale?: number | null;
   musicUrl?: string | null;
+  musicStartSec?: number;
+  musicEndSec?: number | null;
   obstacles: LevelObstacle[];
   checkpoints?: number[];
 }
@@ -159,6 +163,20 @@ export interface CustomLevelInput {
 export const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
   FILE_TOO_LARGE: "El archivo es muy grande (máximo 25MB).",
   INVALID_FILE_TYPE: "Ese tipo de archivo no es válido para esto.",
+  NETWORK_ERROR: "No se pudo conectar con el servidor.",
+};
+
+export const LEVEL_ERROR_MESSAGES: Record<string, string> = {
+  INVALID_NAME: "Ponle un nombre a la pista.",
+  INVALID_DURATION: "La duración debe ser entre 5 y 600 segundos.",
+  INVALID_SPEED: "La velocidad debe ser entre 100 y 1200 px/s (o déjala en blanco).",
+  INVALID_JUMP: "La fuerza de salto debe ser un número negativo entre -300 y -2000 (o déjala en blanco).",
+  INVALID_BACKGROUND_SCALE: "El tamaño del fondo debe ser entre 30% y 400%.",
+  INVALID_OBSTACLES: "Hay un problema con los obstáculos colocados.",
+  INVALID_OBSTACLE_TYPE: "Uno de los obstáculos tiene un tipo inválido.",
+  INVALID_OBSTACLE_SHAPE: "Uno de los obstáculos tiene una posición o tamaño inválido.",
+  OBSTACLE_OUT_OF_BOUNDS: "Algún obstáculo queda después del final de la pista.",
+  INVALID_MUSIC_TRIM: "El inicio y fin de la música no son válidos.",
   NETWORK_ERROR: "No se pudo conectar con el servidor.",
 };
 
