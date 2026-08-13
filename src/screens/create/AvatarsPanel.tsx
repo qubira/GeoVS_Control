@@ -49,6 +49,11 @@ export default function AvatarsPanel() {
     load();
   }
 
+  async function onTogglePublish(a: CustomAvatar) {
+    await api.publishCustomAvatar(a.id, !a.published);
+    load();
+  }
+
   return (
     <div>
       <div className="panel" style={{ marginBottom: 20 }}>
@@ -57,6 +62,7 @@ export default function AvatarsPanel() {
         </div>
         <p className="subtitle" style={{ margin: "0 0 12px" }}>
           Sube una imagen cuadrada — se recorta al centro sobre el cubo del jugador, igual que las caras integradas.
+          Queda en borrador hasta que le des "Subir proyecto" en su tarjeta.
         </p>
         <div className="row" style={{ marginBottom: 10 }}>
           <input
@@ -98,6 +104,16 @@ export default function AvatarsPanel() {
               </button>
               <img src={a.imageUrl} alt={a.name} />
               <div className="thumb-card-name">{a.name}</div>
+              <div style={{ margin: "4px 0" }}>
+                <span className={`badge ${a.published ? "badge-ok" : "badge-draft"}`}>{a.published ? "Publicado" : "Borrador"}</span>
+              </div>
+              <button
+                className={`btn ${a.published ? "btn-secondary" : "btn-primary"}`}
+                style={{ width: "100%", fontSize: 11, padding: "6px 8px" }}
+                onClick={() => onTogglePublish(a)}
+              >
+                {a.published ? "⬇️ Despublicar" : "🚀 Subir proyecto"}
+              </button>
             </div>
           ))}
         </div>

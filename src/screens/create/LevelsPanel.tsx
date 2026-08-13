@@ -23,6 +23,11 @@ export default function LevelsPanel() {
     load();
   }
 
+  async function onTogglePublish(l: CustomLevel) {
+    await api.publishCustomLevel(l.id, !l.published);
+    load();
+  }
+
   if (editing) {
     return (
       <LevelEditor
@@ -40,7 +45,8 @@ export default function LevelsPanel() {
     <div>
       <div className="row-between" style={{ marginBottom: 16 }}>
         <p className="subtitle" style={{ margin: 0 }}>
-          Pistas creadas desde el panel — se agregan a las 3 pistas fijas del juego.
+          Pistas creadas desde el panel. Quedan en borrador hasta que le des "Subir proyecto" — recién ahí los
+          jugadores pueden elegirlas y entrar a jugarlas.
         </p>
         <button className="btn btn-primary" onClick={() => setEditing("new")} style={{ width: "auto" }}>
           + Nueva pista
@@ -55,6 +61,7 @@ export default function LevelsPanel() {
             <thead>
               <tr>
                 <th>Nombre</th>
+                <th>Estado</th>
                 <th>Duración</th>
                 <th>Obstáculos</th>
                 <th></th>
@@ -64,10 +71,20 @@ export default function LevelsPanel() {
               {levels.map((l) => (
                 <tr key={l.id}>
                   <td style={{ fontWeight: 700 }}>{l.name}</td>
+                  <td>
+                    <span className={`badge ${l.published ? "badge-ok" : "badge-draft"}`}>{l.published ? "Publicado" : "Borrador"}</span>
+                  </td>
                   <td style={{ color: "var(--geo-text-dim)" }}>{l.durationSec}s</td>
                   <td style={{ color: "var(--geo-text-dim)" }}>{l.obstacles.length}</td>
                   <td style={{ textAlign: "right" }}>
                     <span style={{ display: "inline-flex", gap: 6 }}>
+                      <button
+                        className={`btn ${l.published ? "btn-secondary" : "btn-primary"}`}
+                        style={{ width: "auto" }}
+                        onClick={() => onTogglePublish(l)}
+                      >
+                        {l.published ? "⬇️ Despublicar" : "🚀 Subir proyecto"}
+                      </button>
                       <button className="btn btn-secondary" style={{ width: "auto" }} onClick={() => setEditing(l)}>
                         Editar
                       </button>
@@ -91,7 +108,7 @@ export default function LevelsPanel() {
               ))}
               {levels.length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: "center", color: "var(--geo-text-dim)", padding: 24 }}>
+                  <td colSpan={5} style={{ textAlign: "center", color: "var(--geo-text-dim)", padding: 24 }}>
                     Todavía no hay pistas personalizadas.
                   </td>
                 </tr>

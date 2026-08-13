@@ -428,6 +428,11 @@ table.data-table {
   color: #6fdc6f;
 }
 
+.badge-draft {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--geo-text-dim);
+}
+
 .role-select {
   position: relative;
   width: 100%;

@@ -103,6 +103,7 @@ export interface CustomAvatar {
   name: string;
   imageUrl: string;
   kind: string;
+  published: boolean;
   createdAt: string;
 }
 
@@ -136,6 +137,7 @@ export interface CustomLevel {
   musicUrl: string | null;
   obstacles: LevelObstacle[];
   checkpoints: number[];
+  published: boolean;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -269,6 +271,11 @@ export const api = {
       body: JSON.stringify(input),
     }),
   deleteCustomAvatar: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/custom-avatars/${id}`, { method: "DELETE" }),
+  publishCustomAvatar: (id: string, published: boolean) =>
+    request<{ ok: boolean; avatar?: CustomAvatar; error?: string }>(`/admin/custom-avatars/${id}/publish`, {
+      method: "PUT",
+      body: JSON.stringify({ published }),
+    }),
 
   listCustomObjectTypes: () => request<{ ok: boolean; objectTypes?: CustomObjectType[]; error?: string }>("/admin/custom-object-types"),
   createCustomObjectType: (input: { name: string; imageUrl: string; physicsType: PhysicsType }) =>
@@ -291,4 +298,9 @@ export const api = {
       body: JSON.stringify(input),
     }),
   deleteCustomLevel: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/custom-levels/${id}`, { method: "DELETE" }),
+  publishCustomLevel: (id: string, published: boolean) =>
+    request<{ ok: boolean; level?: CustomLevel; error?: string }>(`/admin/custom-levels/${id}/publish`, {
+      method: "PUT",
+      body: JSON.stringify({ published }),
+    }),
 };
