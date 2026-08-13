@@ -31,6 +31,13 @@ export interface ConnectionsSummary {
   topByTotalTime: { username: string; seconds: number }[];
 }
 
+export interface WaitlistEntry {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
 export interface UserConnections {
   totalSec: number;
   byDay: { day: string; seconds: number }[];
@@ -115,4 +122,7 @@ export const api = {
 
   connectionsSummary: () => request<{ ok: boolean } & Partial<ConnectionsSummary> & { error?: string }>("/admin/connections/summary"),
   userConnections: (id: string) => request<{ ok: boolean } & Partial<UserConnections> & { error?: string }>(`/admin/users/${id}/connections`),
+
+  waitlist: () => request<{ ok: boolean; entries?: WaitlistEntry[]; error?: string }>("/admin/waitlist"),
+  deleteWaitlistEntry: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/waitlist/${id}`, { method: "DELETE" }),
 };

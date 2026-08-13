@@ -4,9 +4,10 @@ import LoginScreen from "./screens/LoginScreen";
 import DashboardScreen from "./screens/DashboardScreen";
 import UsersScreen from "./screens/UsersScreen";
 import AuditLogScreen from "./screens/AuditLogScreen";
+import WaitlistScreen from "./screens/WaitlistScreen";
 import RoleBadge from "./components/RoleBadge";
 
-type Tab = "dashboard" | "users" | "audit";
+type Tab = "dashboard" | "users" | "audit" | "waitlist";
 
 export default function App() {
   const { account, loading, logout } = useAuth();
@@ -38,6 +39,9 @@ export default function App() {
         <button className={`nav-item ${tab === "audit" ? "active" : ""}`} onClick={() => setTab("audit")}>
           📜 Historial
         </button>
+        <button className={`nav-item ${tab === "waitlist" ? "active" : ""}`} onClick={() => setTab("waitlist")}>
+          📝 Lista de espera
+        </button>
 
         <div style={{ flex: 1 }} />
 
@@ -53,6 +57,7 @@ export default function App() {
         {tab === "dashboard" && <DashboardScreen />}
         {tab === "users" && <UsersScreen />}
         {tab === "audit" && <AuditLogScreen />}
+        {tab === "waitlist" && <WaitlistScreen />}
       </main>
     </div>
   );
