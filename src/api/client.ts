@@ -28,7 +28,18 @@ export interface ConnectionsSummary {
   byRole: { role: string; count: number }[];
   connectionsToday: number;
   byCountry: { country: string; count: number }[];
-  topByTotalTime: { username: string; seconds: number }[];
+  topByTotalTime: { userId: string; username: string; seconds: number }[];
+}
+
+export interface CountrySession {
+  id: string;
+  userId: string;
+  username: string;
+  role: string | null;
+  ip: string | null;
+  connectedAt: string;
+  disconnectedAt: string | null;
+  durationSec: number | null;
 }
 
 export interface WaitlistEntry {
@@ -122,6 +133,8 @@ export const api = {
 
   connectionsSummary: () => request<{ ok: boolean } & Partial<ConnectionsSummary> & { error?: string }>("/admin/connections/summary"),
   userConnections: (id: string) => request<{ ok: boolean } & Partial<UserConnections> & { error?: string }>(`/admin/users/${id}/connections`),
+  connectionsByCountry: (country: string) =>
+    request<{ ok: boolean; sessions?: CountrySession[]; error?: string }>(`/admin/connections/by-country?country=${encodeURIComponent(country)}`),
 
   waitlist: () => request<{ ok: boolean; entries?: WaitlistEntry[]; error?: string }>("/admin/waitlist"),
   deleteWaitlistEntry: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/waitlist/${id}`, { method: "DELETE" }),

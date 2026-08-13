@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
-import { api, type ConnectionsSummary } from "../api/client";
+import { api, type Account, type ConnectionsSummary } from "../api/client";
 import { formatDuration } from "../utils/format";
+import CountryConnectionsModal from "../components/CountryConnectionsModal";
+import UserHistoryModal from "../components/UserHistoryModal";
 
 export default function DashboardScreen() {
   const [data, setData] = useState<ConnectionsSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [country, setCountry] = useState<string | null>(null);
+  const [historyUser, setHistoryUser] = useState<Account | null>(null);
+  const [lookingUp, setLookingUp] = useState<string | null>(null);
 
   useEffect(() => {
     api.connectionsSummary().then(({ body }) => {
@@ -12,6 +17,17 @@ export default function DashboardScreen() {
       setLoading(false);
     });
   }, []);
+
+  async function openPlayerHistory(userId: string, username: string) {
+    setLookingUp(userId);
+    try {
+      const { body } = await api.listUsers({ search: username });
+      const match = body.users?.find((u) => u.id === userId) || body.users?.[0];
+      if (match) setHistoryUser(match);
+    } finally {
+      setLookingUp(null);
+    }
+  }
 
   if (loading) return <p className="subtitle">Cargando...</p>;
   if (!data) return <p className="error-text">No se pudo cargar el resumen.</p>;
@@ -45,7 +61,7 @@ export default function DashboardScreen() {
           <table className="data-table">
             <tbody>
               {data.byCountry.slice(0, 10).map((c) => (
-                <tr key={c.country}>
+                <tr key={c.country} className="row-clickable" onClick={() => setCountry(c.country)}>
                   <td>{c.country}</td>
                   <td style={{ textAlign: "right", color: "var(--geo-text-dim)" }}>{c.count}</td>
                 </tr>
@@ -60,7 +76,12 @@ export default function DashboardScreen() {
           <table className="data-table">
             <tbody>
               {data.topByTotalTime.map((u) => (
-                <tr key={u.username}>
+                <tr
+                  key={u.userId}
+                  className="row-clickable"
+                  onClick={() => openPlayerHistory(u.userId, u.username)}
+                  style={{ opacity: lookingUp === u.userId ? 0.5 : 1 }}
+                >
                   <td>{u.username}</td>
                   <td style={{ textAlign: "right", color: "var(--geo-text-dim)" }}>{formatDuration(u.seconds)}</td>
                 </tr>
@@ -69,6 +90,9 @@ export default function DashboardScreen() {
           </table>
         </div>
       </div>
+
+      {country && <CountryConnectionsModal country={country} onClose={() => setCountry(null)} />}
+      {historyUser && <UserHistoryModal user={historyUser} onClose={() => setHistoryUser(null)} />}
     </div>
   );
 }
