@@ -82,6 +82,37 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+export interface BlockReason {
+  id: string;
+  label: string;
+  createdAt: string;
+}
+
+export interface AccountBlock {
+  id: string;
+  userId: string;
+  username: string | null;
+  reasonId: string;
+  reasonLabel: string;
+  messageId: string | null;
+  messageText: string | null;
+  blockedBy: string;
+  blockedByName: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export const MODERATION_ERROR_MESSAGES: Record<string, string> = {
+  INVALID_USER: "No se reconoce esa cuenta.",
+  USER_NOT_FOUND: "Esa cuenta ya no existe.",
+  INVALID_REASON: "Elige un motivo válido.",
+  INVALID_USERS: "Selecciona al menos una cuenta.",
+  INVALID_LABEL: "Ponle un nombre al motivo.",
+  LABEL_IN_USE: "Ya existe un motivo con ese nombre.",
+  REASON_IN_USE: "Ese motivo ya se usó en algún bloqueo o alerta — no se puede borrar.",
+  NETWORK_ERROR: "No se pudo conectar con el servidor.",
+};
+
 export interface WaitlistEntry {
   id: string;
   name: string;
@@ -288,6 +319,31 @@ export const api = {
       `/admin/chat-messages${suffix}`
     );
   },
+
+  // --- Moderacion: bloqueo, alertas y motivos -----------------------------
+  blockAccount: (input: { userId: string; reasonId: string; messageId?: string }) =>
+    request<{ ok: boolean; block?: AccountBlock; error?: string }>("/admin/moderation/block", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  warnAccounts: (input: { userIds: string[]; reasonId: string; messageId?: string }) =>
+    request<{ ok: boolean; warned?: unknown[]; blockedInstead?: string[]; error?: string }>("/admin/moderation/warn", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  accountBlocks: (params: { active?: boolean } = {}) => {
+    const qs = params.active === false ? "?active=false" : "";
+    return request<{ ok: boolean; blocks?: AccountBlock[]; error?: string }>(`/admin/account-blocks${qs}`);
+  },
+  unblockAccount: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/account-blocks/${id}/unblock`, { method: "PUT" }),
+
+  blockReasons: () => request<{ ok: boolean; reasons?: BlockReason[]; error?: string }>("/admin/block-reasons"),
+  createBlockReason: (label: string) =>
+    request<{ ok: boolean; reason?: BlockReason; error?: string }>("/admin/block-reasons", {
+      method: "POST",
+      body: JSON.stringify({ label }),
+    }),
+  deleteBlockReason: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/block-reasons/${id}`, { method: "DELETE" }),
 
   waitlist: () => request<{ ok: boolean; entries?: WaitlistEntry[]; error?: string }>("/admin/waitlist"),
   deleteWaitlistEntry: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/waitlist/${id}`, { method: "DELETE" }),

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type ChatMessage } from "../api/client";
+import { api, type ChatMessage, type BlockReason, MODERATION_ERROR_MESSAGES } from "../api/client";
 import { formatDate } from "../utils/format";
 
 const PAGE_SIZE = 50;
@@ -10,6 +10,21 @@ export default function ConversationsScreen() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+
+  const [reasons, setReasons] = useState<BlockReason[]>([]);
+  const [reasonId, setReasonId] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [actionNote, setActionNote] = useState("");
+
+  useEffect(() => {
+    api.blockReasons().then(({ body }) => {
+      const list = body.reasons || [];
+      setReasons(list);
+      if (list.length) setReasonId((prev) => prev || list[0].id);
+    });
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -28,9 +43,87 @@ export default function ConversationsScreen() {
   const onSearchChange = (value: string) => {
     setSearch(value);
     setPage(1);
+    setSelected(new Set());
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // Solo los mensajes de una cuenta real se pueden bloquear/alertar — una
+  // sesion anonima (userId null, ver Room.js) no tiene a quien bloquear.
+  const selectableIds = messages.filter((m) => m.userId).map((m) => m.id);
+  const allVisibleSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
+
+  function toggleRow(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllVisible() {
+    setSelected((prev) => {
+      if (allVisibleSelected) {
+        const next = new Set(prev);
+        selectableIds.forEach((id) => next.delete(id));
+        return next;
+      }
+      return new Set([...prev, ...selectableIds]);
+    });
+  }
+
+  // De las filas seleccionadas (pueden ser varios mensajes de la misma
+  // cuenta) se saca el conjunto de cuentas distintas — eso es lo que
+  // realmente se bloquea/alerta.
+  const selectedMessages = messages.filter((m) => selected.has(m.id));
+  const selectedUserIds = [...new Set(selectedMessages.map((m) => m.userId).filter((id): id is string => !!id))];
+  // Si la seleccion es exactamente un mensaje, se guarda como el mensaje que
+  // origino la accion (queda en el historial); con varias filas seleccionadas
+  // no hay un unico mensaje al que anclar el motivo.
+  const singleMessageId = selectedMessages.length === 1 ? selectedMessages[0].id : undefined;
+
+  async function onBlockSelected() {
+    if (!reasonId || selectedUserIds.length === 0) return;
+    setBusy(true);
+    setActionError("");
+    setActionNote("");
+    const failures: string[] = [];
+    for (const userId of selectedUserIds) {
+      const { body } = await api.blockAccount({ userId, reasonId, messageId: singleMessageId });
+      if (!body.ok) failures.push(body.error || "ERROR");
+    }
+    setBusy(false);
+    setSelected(new Set());
+    if (failures.length) {
+      setActionError(MODERATION_ERROR_MESSAGES[failures[0]] || "No se pudo bloquear alguna de las cuentas.");
+    } else {
+      setActionNote(`${selectedUserIds.length === 1 ? "Cuenta bloqueada" : `${selectedUserIds.length} cuentas bloqueadas`}.`);
+    }
+  }
+
+  async function onWarnSelected() {
+    if (!reasonId || selectedUserIds.length === 0) return;
+    setBusy(true);
+    setActionError("");
+    setActionNote("");
+    const { body } = await api.warnAccounts({ userIds: selectedUserIds, reasonId, messageId: singleMessageId });
+    setBusy(false);
+    setSelected(new Set());
+    if (!body.ok) {
+      setActionError(MODERATION_ERROR_MESSAGES[body.error || ""] || "No se pudo mandar la alerta.");
+      return;
+    }
+    const warnedCount = body.warned?.length || 0;
+    const blockedInstead = body.blockedInstead || [];
+    if (blockedInstead.length) {
+      setActionNote(
+        `${warnedCount} alerta(s) enviada(s). ${blockedInstead.length} cuenta(s) ya tienen 3 alertas — hay que bloquearlas en vez de alertar de nuevo.`
+      );
+    } else {
+      setActionNote(`${warnedCount} alerta(s) enviada(s).`);
+    }
+  }
 
   return (
     <div>
@@ -47,6 +140,29 @@ export default function ConversationsScreen() {
         />
       </div>
 
+      {selectedUserIds.length > 0 && (
+        <div className="panel" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, color: "var(--geo-text-dim)" }}>
+            {selectedUserIds.length} cuenta{selectedUserIds.length === 1 ? "" : "s"} seleccionada{selectedUserIds.length === 1 ? "" : "s"}
+          </span>
+          <select className="input" style={{ marginBottom: 0, width: "auto" }} value={reasonId} onChange={(e) => setReasonId(e.target.value)}>
+            {reasons.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+          <button className="btn-danger" disabled={busy || !reasonId} onClick={onBlockSelected}>
+            🚫 Bloquear seleccionados
+          </button>
+          <button className="btn-secondary" disabled={busy || !reasonId} onClick={onWarnSelected}>
+            ⚠️ Enviar alerta a seleccionados
+          </button>
+        </div>
+      )}
+      {!!actionError && <p className="error-text">{actionError}</p>}
+      {!!actionNote && <p className="subtitle" style={{ color: "var(--geo-cyan)" }}>{actionNote}</p>}
+
       <div className="panel" style={{ overflowX: "auto" }}>
         {loading ? (
           <p className="subtitle">Cargando...</p>
@@ -54,6 +170,9 @@ export default function ConversationsScreen() {
           <table className="data-table">
             <thead>
               <tr>
+                <th style={{ width: 30 }}>
+                  <input type="checkbox" checked={allVisibleSelected} onChange={toggleAllVisible} disabled={selectableIds.length === 0} />
+                </th>
                 <th>Fecha/hora</th>
                 <th>Sala</th>
                 <th>Usuario</th>
@@ -63,6 +182,9 @@ export default function ConversationsScreen() {
             <tbody>
               {messages.map((m) => (
                 <tr key={m.id}>
+                  <td>
+                    <input type="checkbox" checked={selected.has(m.id)} disabled={!m.userId} onChange={() => toggleRow(m.id)} />
+                  </td>
                   <td style={{ color: "var(--geo-text-dim)", whiteSpace: "nowrap" }}>{formatDate(m.createdAt)}</td>
                   <td style={{ fontFamily: "monospace" }}>{m.roomCode}</td>
                   <td style={{ fontWeight: 700 }}>{m.username}</td>
@@ -71,7 +193,7 @@ export default function ConversationsScreen() {
               ))}
               {messages.length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: "center", color: "var(--geo-text-dim)", padding: 24 }}>
+                  <td colSpan={5} style={{ textAlign: "center", color: "var(--geo-text-dim)", padding: 24 }}>
                     {search ? "Sin resultados para esa búsqueda." : "Todavía no hay mensajes registrados."}
                   </td>
                 </tr>

@@ -6,11 +6,13 @@ import UsersScreen from "./screens/UsersScreen";
 import AuditLogScreen from "./screens/AuditLogScreen";
 import WaitlistScreen from "./screens/WaitlistScreen";
 import ConversationsScreen from "./screens/ConversationsScreen";
+import BlockedAccountsScreen from "./screens/BlockedAccountsScreen";
+import SettingsScreen from "./screens/SettingsScreen";
 import CreateScreen from "./screens/CreateScreen";
 import RoleBadge from "./components/RoleBadge";
 import logo from "../imagen/logo_geovs.png";
 
-type Tab = "dashboard" | "users" | "audit" | "waitlist" | "conversations" | "create";
+type Tab = "dashboard" | "users" | "audit" | "waitlist" | "conversations" | "blocked" | "settings" | "create";
 
 export default function App() {
   const { account, loading, networkError, logout, retry } = useAuth();
@@ -80,6 +82,12 @@ export default function App() {
             <button className={`nav-item ${tab === "conversations" ? "active" : ""}`} onClick={() => setTab("conversations")}>
               💬 Conversaciones
             </button>
+            <button className={`nav-item ${tab === "blocked" ? "active" : ""}`} onClick={() => setTab("blocked")}>
+              🚫 Cuentas bloqueadas
+            </button>
+            <button className={`nav-item ${tab === "settings" ? "active" : ""}`} onClick={() => setTab("settings")}>
+              ⚙️ Configuración
+            </button>
           </>
         )}
         <button className={`nav-item ${tab === "create" ? "active" : ""}`} onClick={() => setTab("create")}>
@@ -102,6 +110,8 @@ export default function App() {
         {effectiveTab === "audit" && <AuditLogScreen />}
         {effectiveTab === "waitlist" && <WaitlistScreen />}
         {effectiveTab === "conversations" && <ConversationsScreen />}
+        {effectiveTab === "blocked" && <BlockedAccountsScreen />}
+        {effectiveTab === "settings" && <SettingsScreen />}
         {effectiveTab === "create" && <CreateScreen />}
       </main>
     </div>
