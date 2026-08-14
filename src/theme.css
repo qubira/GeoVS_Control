@@ -319,6 +319,18 @@ table.data-table {
   min-width: 0;
 }
 
+/* Tarjeta "ancha": ocupa 2 columnas del grid en vez de 1 — para una
+   tarjeta con varios stat-cards + grafico adentro (ej. Moderación),
+   quedar apretada en el mismo ancho que las demas la hacia ilegible. */
+.metric-card-wide {
+  grid-column: span 2;
+}
+
+.metric-card .stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  margin-bottom: 14px;
+}
+
 .metric-card-title {
   font-size: 13px;
   font-weight: 700;

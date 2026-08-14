@@ -12,7 +12,7 @@ export default function ModerationSummaryCard({ range }: { range: RangeParams })
   }, [range.range, range.date]);
 
   return (
-    <div className="metric-card">
+    <div className="metric-card metric-card-wide">
       <h2 className="metric-card-title" style={{ margin: 0 }}>
         Moderación
       </h2>
@@ -24,21 +24,29 @@ export default function ModerationSummaryCard({ range }: { range: RangeParams })
         </p>
       ) : (
         <>
-          <div className="stat-grid" style={{ marginBottom: 12 }}>
-            <div className="stat-card">
-              <div className="stat-value">{data.activeBlocks}</div>
+          <div className="stat-grid" style={{ marginBottom: 14 }}>
+            <div className="stat-card" style={{ padding: 12 }}>
+              <div className="stat-value" style={{ fontSize: 20 }}>
+                {data.activeBlocks}
+              </div>
               <div className="stat-label">Cuentas bloqueadas</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-value">{data.warningsInRange}</div>
+            <div className="stat-card" style={{ padding: 12 }}>
+              <div className="stat-value" style={{ fontSize: 20 }}>
+                {data.warningsInRange}
+              </div>
               <div className="stat-label">Alertas en el rango</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-value">{data.ipBlocksCount}</div>
+            <div className="stat-card" style={{ padding: 12 }}>
+              <div className="stat-value" style={{ fontSize: 20 }}>
+                {data.ipBlocksCount}
+              </div>
               <div className="stat-label">IPs bloqueadas</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-value">{data.messagesInRange}</div>
+            <div className="stat-card" style={{ padding: 12 }}>
+              <div className="stat-value" style={{ fontSize: 20 }}>
+                {data.messagesInRange}
+              </div>
               <div className="stat-label">Mensajes en el rango</div>
             </div>
           </div>
@@ -48,7 +56,7 @@ export default function ModerationSummaryCard({ range }: { range: RangeParams })
           </p>
           <BarChart
             data={data.topReasons.map((r) => ({ label: r.label, value: r.count }))}
-            height={90}
+            height={100}
             formatValue={(v) => `${v}`}
             emptyLabel="Sin bloqueos ni alertas en este rango."
           />
