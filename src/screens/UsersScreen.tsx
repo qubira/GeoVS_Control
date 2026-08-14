@@ -112,6 +112,7 @@ export default function UsersScreen() {
                 <th>Edad</th>
                 <th>Rol</th>
                 <th>Estado</th>
+                <th>Última IP</th>
                 <th>Creada</th>
                 <th></th>
               </tr>
@@ -128,6 +129,9 @@ export default function UsersScreen() {
                   <td>
                     <span className={`badge ${u.blocked ? "badge-blocked" : "badge-ok"}`}>{u.blocked ? "Bloqueada" : "Activa"}</span>
                   </td>
+                  <td style={{ fontFamily: "monospace", color: "var(--geo-text-dim)" }} title={u.lastIpAt ? formatDate(u.lastIpAt) : undefined}>
+                    {u.lastIp || "—"}
+                  </td>
                   <td style={{ color: "var(--geo-text-dim)" }}>{formatDate(u.createdAt)}</td>
                   <td>
                     <button className="btn btn-secondary" style={{ padding: "6px 12px" }} onClick={() => setEditing(u)}>
@@ -138,7 +142,7 @@ export default function UsersScreen() {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", color: "var(--geo-text-dim)", padding: 24 }}>
+                  <td colSpan={8} style={{ textAlign: "center", color: "var(--geo-text-dim)", padding: 24 }}>
                     Sin resultados.
                   </td>
                 </tr>

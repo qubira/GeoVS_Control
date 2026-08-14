@@ -445,6 +445,24 @@ table.data-table {
   color: var(--geo-text-dim);
 }
 
+/* Calidad de conexion (ping/RTT real por jugador, ver modulo Salas). */
+.badge-quality-muy_buena {
+  background: rgba(46, 125, 50, 0.25);
+  color: #6fdc6f;
+}
+.badge-quality-normal {
+  background: rgba(34, 211, 238, 0.2);
+  color: var(--geo-cyan);
+}
+.badge-quality-baja {
+  background: rgba(245, 158, 11, 0.2);
+  color: #ffc266;
+}
+.badge-quality-mala {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ff8080;
+}
+
 .role-select {
   position: relative;
   width: 100%;

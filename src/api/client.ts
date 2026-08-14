@@ -8,6 +8,10 @@ export interface Account {
   role: "player" | "developer" | "moderator" | "admin";
   blocked: boolean;
   createdAt: string;
+  // Ultima IP conocida (y cuando) — el historico completo, con fecha/hora
+  // de cada conexion, esta en UserHistoryModal (api.userConnections).
+  lastIp?: string | null;
+  lastIpAt?: string | null;
 }
 
 export interface AuditLogEntry {
@@ -93,6 +97,52 @@ export interface ModerationSummary {
   messagesInRange: number;
   topReasons: { label: string; count: number }[];
 }
+
+export type ConnectionQuality = "muy_buena" | "normal" | "baja" | "mala";
+
+export interface LiveRoomPlayer {
+  id: string;
+  name: string;
+  connected: boolean;
+  rttMs: number | null;
+  quality: ConnectionQuality | null;
+}
+
+export interface LiveRoom {
+  code: string;
+  mode: string;
+  levelId: string;
+  state: "lobby" | "countdown" | "playing" | "finished";
+  maxPlayers: number;
+  players: LiveRoomPlayer[];
+}
+
+export interface RoomLog {
+  id: string;
+  code: string;
+  mode: string;
+  levelId: string;
+  maxPlayers: number;
+  createdAt: string;
+  endedAt: string | null;
+  endReason: string | null;
+  endedBy: string | null;
+  peakPlayers: number;
+}
+
+export interface RoomLatencySample {
+  id: string;
+  takenAt: string;
+  avgRttMs: number | null;
+  minRttMs: number | null;
+  maxRttMs: number | null;
+  playerCount: number;
+}
+
+export const ROOM_ERROR_MESSAGES: Record<string, string> = {
+  NOT_FOUND: "Esa sala ya no existe (puede que se haya vaciado sola).",
+  NETWORK_ERROR: "No se pudo conectar con el servidor.",
+};
 
 export interface BlockReason {
   id: string;
@@ -409,6 +459,20 @@ export const api = {
   deleteIpBlock: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/ip-blocks/${id}`, { method: "DELETE" }),
   ipBlockAccounts: (ip: string) =>
     request<{ ok: boolean; accounts?: IpAccount[]; error?: string }>(`/admin/ip-blocks/${encodeURIComponent(ip)}/accounts`),
+
+  // --- Salas -----------------------------------------------------------
+  liveRooms: () => request<{ ok: boolean; rooms?: LiveRoom[]; error?: string }>("/admin/rooms/live"),
+  roomHistory: (params: { search?: string; dateFrom?: string; dateTo?: string } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.search) qs.set("search", params.search);
+    if (params.dateFrom) qs.set("dateFrom", params.dateFrom);
+    if (params.dateTo) qs.set("dateTo", params.dateTo);
+    const suffix = qs.toString() ? `?${qs}` : "";
+    return request<{ ok: boolean; logs?: RoomLog[]; error?: string }>(`/admin/rooms/history${suffix}`);
+  },
+  roomSamples: (roomLogId: string) =>
+    request<{ ok: boolean; samples?: RoomLatencySample[]; error?: string }>(`/admin/rooms/history/${roomLogId}/samples`),
+  endRoom: (code: string) => request<{ ok: boolean; error?: string }>(`/admin/rooms/${code}/end`, { method: "POST" }),
 
   waitlist: (params: { search?: string; dateFrom?: string; dateTo?: string } = {}) => {
     const qs = new URLSearchParams();

@@ -118,27 +118,37 @@ export default function UserHistoryModal({ user, onClose }: { user: Account; onC
 
                 {conn.sessions.length > 0 && (
                   <>
-                    <div className="label">Últimas conexiones</div>
-                    <table className="data-table" style={{ marginBottom: 16 }}>
-                      <thead>
-                        <tr>
-                          <th>Fecha</th>
-                          <th>País</th>
-                          <th>IP</th>
-                          <th>Duración</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {conn.sessions.slice(0, 10).map((s) => (
-                          <tr key={s.id}>
-                            <td>{formatDate(s.connectedAt)}</td>
-                            <td>{s.country || "—"}</td>
-                            <td style={{ color: "var(--geo-text-dim)" }}>{s.ip || "—"}</td>
-                            <td>{s.durationSec != null ? formatDuration(s.durationSec) : "en curso"}</td>
+                    <div className="row-between" style={{ marginBottom: 4 }}>
+                      <div className="label" style={{ marginTop: 0, marginBottom: 0 }}>
+                        Conexiones — mapeo de IP
+                      </div>
+                      <span style={{ fontSize: 11, color: "var(--geo-text-dim)" }}>
+                        {new Set(conn.sessions.map((s) => s.ip).filter(Boolean)).size} IP distinta
+                        {new Set(conn.sessions.map((s) => s.ip).filter(Boolean)).size === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                    <div style={{ maxHeight: 220, overflowY: "auto", marginBottom: 16 }}>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Fecha</th>
+                            <th>País</th>
+                            <th>IP</th>
+                            <th>Duración</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {conn.sessions.map((s) => (
+                            <tr key={s.id}>
+                              <td>{formatDate(s.connectedAt)}</td>
+                              <td>{s.country || "—"}</td>
+                              <td style={{ color: "var(--geo-text-dim)", fontFamily: "monospace" }}>{s.ip || "—"}</td>
+                              <td>{s.durationSec != null ? formatDuration(s.durationSec) : "en curso"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </>
                 )}
               </>
