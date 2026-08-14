@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "./state/AuthContext";
 import LoginScreen from "./screens/LoginScreen";
 import DashboardScreen from "./screens/DashboardScreen";
@@ -14,6 +14,10 @@ type Tab = "dashboard" | "users" | "audit" | "waitlist" | "create";
 export default function App() {
   const { account, loading, networkError, logout, retry } = useAuth();
   const [tab, setTab] = useState<Tab>("dashboard");
+
+  useEffect(() => {
+    if (account?.role === "developer" && tab !== "create") setTab("create");
+  }, [account?.role, tab]);
 
   if (loading) {
     return (
@@ -41,6 +45,15 @@ export default function App() {
 
   if (!account) return <LoginScreen />;
 
+  // El rol developer solo puede ver y usar el modulo "Crear" — el backend ya
+  // rechaza (403) cualquier otra ruta /admin para ese rol, esto es la
+  // contraparte visual para no mostrar botones que llevarian a un error.
+  // effectiveTab se calcula en el mismo render (no solo en el useEffect de
+  // arriba) para que una cuenta developer no vea, ni por un instante, la
+  // pantalla de otra seccion mientras el estado se corrige.
+  const isDeveloper = account.role === "developer";
+  const effectiveTab = isDeveloper ? "create" : tab;
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -49,18 +62,22 @@ export default function App() {
           GeoVS <span style={{ color: "var(--geo-cyan)" }}>Control</span>
         </div>
 
-        <button className={`nav-item ${tab === "dashboard" ? "active" : ""}`} onClick={() => setTab("dashboard")}>
-          📊 Resumen
-        </button>
-        <button className={`nav-item ${tab === "users" ? "active" : ""}`} onClick={() => setTab("users")}>
-          👥 Cuentas
-        </button>
-        <button className={`nav-item ${tab === "audit" ? "active" : ""}`} onClick={() => setTab("audit")}>
-          📜 Historial
-        </button>
-        <button className={`nav-item ${tab === "waitlist" ? "active" : ""}`} onClick={() => setTab("waitlist")}>
-          📝 Lista de espera
-        </button>
+        {!isDeveloper && (
+          <>
+            <button className={`nav-item ${tab === "dashboard" ? "active" : ""}`} onClick={() => setTab("dashboard")}>
+              📊 Resumen
+            </button>
+            <button className={`nav-item ${tab === "users" ? "active" : ""}`} onClick={() => setTab("users")}>
+              👥 Cuentas
+            </button>
+            <button className={`nav-item ${tab === "audit" ? "active" : ""}`} onClick={() => setTab("audit")}>
+              📜 Historial
+            </button>
+            <button className={`nav-item ${tab === "waitlist" ? "active" : ""}`} onClick={() => setTab("waitlist")}>
+              📝 Lista de espera
+            </button>
+          </>
+        )}
         <button className={`nav-item ${tab === "create" ? "active" : ""}`} onClick={() => setTab("create")}>
           🛠️ Crear
         </button>
@@ -76,11 +93,11 @@ export default function App() {
       </aside>
 
       <main className="main">
-        {tab === "dashboard" && <DashboardScreen />}
-        {tab === "users" && <UsersScreen />}
-        {tab === "audit" && <AuditLogScreen />}
-        {tab === "waitlist" && <WaitlistScreen />}
-        {tab === "create" && <CreateScreen />}
+        {effectiveTab === "dashboard" && <DashboardScreen />}
+        {effectiveTab === "users" && <UsersScreen />}
+        {effectiveTab === "audit" && <AuditLogScreen />}
+        {effectiveTab === "waitlist" && <WaitlistScreen />}
+        {effectiveTab === "create" && <CreateScreen />}
       </main>
     </div>
   );
