@@ -7,12 +7,13 @@ import AuditLogScreen from "./screens/AuditLogScreen";
 import WaitlistScreen from "./screens/WaitlistScreen";
 import ConversationsScreen from "./screens/ConversationsScreen";
 import BlockedAccountsScreen from "./screens/BlockedAccountsScreen";
+import IpBlacklistScreen from "./screens/IpBlacklistScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import CreateScreen from "./screens/CreateScreen";
 import RoleBadge from "./components/RoleBadge";
 import logo from "../imagen/logo_geovs.png";
 
-type Tab = "dashboard" | "users" | "audit" | "waitlist" | "conversations" | "blocked" | "settings" | "create";
+type Tab = "dashboard" | "users" | "audit" | "waitlist" | "conversations" | "blocked" | "ipBlocks" | "settings" | "create";
 
 export default function App() {
   const { account, loading, networkError, logout, retry } = useAuth();
@@ -85,6 +86,9 @@ export default function App() {
             <button className={`nav-item ${tab === "blocked" ? "active" : ""}`} onClick={() => setTab("blocked")}>
               🚫 Cuentas bloqueadas
             </button>
+            <button className={`nav-item ${tab === "ipBlocks" ? "active" : ""}`} onClick={() => setTab("ipBlocks")}>
+              🌐 Lista negra de IP
+            </button>
             <button className={`nav-item ${tab === "settings" ? "active" : ""}`} onClick={() => setTab("settings")}>
               ⚙️ Configuración
             </button>
@@ -111,6 +115,7 @@ export default function App() {
         {effectiveTab === "waitlist" && <WaitlistScreen />}
         {effectiveTab === "conversations" && <ConversationsScreen />}
         {effectiveTab === "blocked" && <BlockedAccountsScreen />}
+        {effectiveTab === "ipBlocks" && <IpBlacklistScreen />}
         {effectiveTab === "settings" && <SettingsScreen />}
         {effectiveTab === "create" && <CreateScreen />}
       </main>

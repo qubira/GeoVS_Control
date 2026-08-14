@@ -102,6 +102,21 @@ export interface AccountBlock {
   createdAt: string;
 }
 
+export interface IpBlock {
+  id: string;
+  ip: string;
+  reason: string;
+  blockedBy: string | null;
+  createdAt: string;
+}
+
+export interface IpAccount {
+  id: string;
+  username: string;
+  blocked: boolean;
+  role: string;
+}
+
 export const MODERATION_ERROR_MESSAGES: Record<string, string> = {
   INVALID_USER: "No se reconoce esa cuenta.",
   USER_NOT_FOUND: "Esa cuenta ya no existe.",
@@ -110,6 +125,8 @@ export const MODERATION_ERROR_MESSAGES: Record<string, string> = {
   INVALID_LABEL: "Ponle un nombre al motivo.",
   LABEL_IN_USE: "Ya existe un motivo con ese nombre.",
   REASON_IN_USE: "Ese motivo ya se usó en algún bloqueo o alerta — no se puede borrar.",
+  INVALID_IP: "Ingresa una IP válida.",
+  IP_ALREADY_BLOCKED: "Esa IP ya está bloqueada.",
   NETWORK_ERROR: "No se pudo conectar con el servidor.",
 };
 
@@ -344,6 +361,17 @@ export const api = {
       body: JSON.stringify({ label }),
     }),
   deleteBlockReason: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/block-reasons/${id}`, { method: "DELETE" }),
+
+  // --- Lista negra de IP ---------------------------------------------------
+  ipBlocks: () => request<{ ok: boolean; blocks?: IpBlock[]; error?: string }>("/admin/ip-blocks"),
+  createIpBlock: (input: { ip: string; reason: string }) =>
+    request<{ ok: boolean; block?: IpBlock; error?: string }>("/admin/ip-blocks", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  deleteIpBlock: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/ip-blocks/${id}`, { method: "DELETE" }),
+  ipBlockAccounts: (ip: string) =>
+    request<{ ok: boolean; accounts?: IpAccount[]; error?: string }>(`/admin/ip-blocks/${encodeURIComponent(ip)}/accounts`),
 
   waitlist: () => request<{ ok: boolean; entries?: WaitlistEntry[]; error?: string }>("/admin/waitlist"),
   deleteWaitlistEntry: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/waitlist/${id}`, { method: "DELETE" }),
