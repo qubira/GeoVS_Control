@@ -15,6 +15,8 @@ export default function ObjectTypesPanel() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<PhysicsType | "">("");
 
   function load() {
     setLoading(true);
@@ -105,13 +107,43 @@ export default function ObjectTypesPanel() {
         {!!error && <p className="error-text">{error}</p>}
       </div>
 
+      {objectTypes.length > 0 && (
+        <div className="row" style={{ marginBottom: 16 }}>
+          <input
+            className="input"
+            placeholder="Buscar por nombre..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ minWidth: 220 }}
+          />
+          <div className="segmented">
+            <button type="button" className={`segmented-btn ${typeFilter === "" ? "active" : ""}`} onClick={() => setTypeFilter("")}>
+              Todos
+            </button>
+            {PHYSICS_LABELS.map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                className={`segmented-btn ${typeFilter === p.value ? "active" : ""}`}
+                onClick={() => setTypeFilter(p.value)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <p className="subtitle">Cargando...</p>
       ) : objectTypes.length === 0 ? (
         <p className="subtitle">Todavía no hay objetos personalizados.</p>
       ) : (
         <div className="thumb-grid">
-          {objectTypes.map((o) => (
+          {objectTypes
+            .filter((o) => o.name.toLowerCase().includes(search.trim().toLowerCase()))
+            .filter((o) => (typeFilter === "" ? true : o.physicsType === typeFilter))
+            .map((o) => (
             <div className="thumb-card" key={o.id}>
               <button className="thumb-card-delete" onClick={() => onDelete(o.id)} title="Eliminar">
                 ✕

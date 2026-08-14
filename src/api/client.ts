@@ -80,6 +80,18 @@ export interface ChatMessage {
   username: string;
   text: string;
   createdAt: string;
+  // Cuantas alertas tiene YA esa cuenta (null = sesion anonima, no aplica).
+  // Se muestra antes de alertar de nuevo, para no descubrir el limite de 3
+  // recien cuando el servidor la rechaza.
+  warningCount: number | null;
+}
+
+export interface ModerationSummary {
+  activeBlocks: number;
+  warningsInRange: number;
+  ipBlocksCount: number;
+  messagesInRange: number;
+  topReasons: { label: string; count: number }[];
 }
 
 export interface BlockReason {
@@ -278,10 +290,13 @@ export const api = {
     }),
   me: () => request<{ ok: boolean; user?: Account; error?: string }>("/auth/me"),
 
-  listUsers: (params: { search?: string; role?: string } = {}) => {
+  listUsers: (params: { search?: string; role?: string; blocked?: "true" | "false"; dateFrom?: string; dateTo?: string } = {}) => {
     const qs = new URLSearchParams();
     if (params.search) qs.set("search", params.search);
     if (params.role) qs.set("role", params.role);
+    if (params.blocked) qs.set("blocked", params.blocked);
+    if (params.dateFrom) qs.set("dateFrom", params.dateFrom);
+    if (params.dateTo) qs.set("dateTo", params.dateTo);
     const suffix = qs.toString() ? `?${qs}` : "";
     return request<{ ok: boolean; users?: Account[]; error?: string }>(`/admin/users${suffix}`);
   },
@@ -304,10 +319,16 @@ export const api = {
       body: JSON.stringify({ reason }),
     }),
 
-  auditLogs: (params: { userId?: string; username?: string } = {}) => {
+  auditLogs: (
+    params: { userId?: string; username?: string; field?: string; changedBy?: string; dateFrom?: string; dateTo?: string } = {}
+  ) => {
     const qs = new URLSearchParams();
     if (params.userId) qs.set("userId", params.userId);
     if (params.username) qs.set("username", params.username);
+    if (params.field) qs.set("field", params.field);
+    if (params.changedBy) qs.set("changedBy", params.changedBy);
+    if (params.dateFrom) qs.set("dateFrom", params.dateFrom);
+    if (params.dateTo) qs.set("dateTo", params.dateTo);
     const suffix = qs.toString() ? `?${qs}` : "";
     return request<{ ok: boolean; logs?: AuditLogEntry[]; error?: string }>(`/admin/audit-logs${suffix}`);
   },
@@ -327,9 +348,15 @@ export const api = {
     request<{ ok: boolean } & Partial<PeakHours> & { error?: string }>(`/admin/users/${id}/peak-hours${rangeQS(params)}`),
 
   // --- Conversaciones (moderacion) ----------------------------------------
-  chatMessages: (params: { search?: string; page?: number } = {}) => {
+  chatMessages: (
+    params: { search?: string; roomCode?: string; onlyAccounts?: boolean; dateFrom?: string; dateTo?: string; page?: number } = {}
+  ) => {
     const qs = new URLSearchParams();
     if (params.search) qs.set("search", params.search);
+    if (params.roomCode) qs.set("roomCode", params.roomCode);
+    if (params.onlyAccounts) qs.set("onlyAccounts", "true");
+    if (params.dateFrom) qs.set("dateFrom", params.dateFrom);
+    if (params.dateTo) qs.set("dateTo", params.dateTo);
     if (params.page) qs.set("page", String(params.page));
     const suffix = qs.toString() ? `?${qs}` : "";
     return request<{ ok: boolean; messages?: ChatMessage[]; total?: number; page?: number; pageSize?: number; error?: string }>(
@@ -348,9 +375,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify(input),
     }),
-  accountBlocks: (params: { active?: boolean } = {}) => {
-    const qs = params.active === false ? "?active=false" : "";
-    return request<{ ok: boolean; blocks?: AccountBlock[]; error?: string }>(`/admin/account-blocks${qs}`);
+  moderationSummary: (params: RangeParams = {}) =>
+    request<{ ok: boolean } & Partial<ModerationSummary> & { error?: string }>(`/admin/moderation/summary${rangeQS(params)}`),
+  accountBlocks: (params: { active?: boolean; search?: string; dateFrom?: string; dateTo?: string } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.active === false) qs.set("active", "false");
+    if (params.search) qs.set("search", params.search);
+    if (params.dateFrom) qs.set("dateFrom", params.dateFrom);
+    if (params.dateTo) qs.set("dateTo", params.dateTo);
+    const suffix = qs.toString() ? `?${qs}` : "";
+    return request<{ ok: boolean; blocks?: AccountBlock[]; error?: string }>(`/admin/account-blocks${suffix}`);
   },
   unblockAccount: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/account-blocks/${id}/unblock`, { method: "PUT" }),
 
@@ -363,7 +397,10 @@ export const api = {
   deleteBlockReason: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/block-reasons/${id}`, { method: "DELETE" }),
 
   // --- Lista negra de IP ---------------------------------------------------
-  ipBlocks: () => request<{ ok: boolean; blocks?: IpBlock[]; error?: string }>("/admin/ip-blocks"),
+  ipBlocks: (params: { search?: string } = {}) => {
+    const suffix = params.search ? `?search=${encodeURIComponent(params.search)}` : "";
+    return request<{ ok: boolean; blocks?: IpBlock[]; error?: string }>(`/admin/ip-blocks${suffix}`);
+  },
   createIpBlock: (input: { ip: string; reason: string }) =>
     request<{ ok: boolean; block?: IpBlock; error?: string }>("/admin/ip-blocks", {
       method: "POST",
@@ -373,7 +410,14 @@ export const api = {
   ipBlockAccounts: (ip: string) =>
     request<{ ok: boolean; accounts?: IpAccount[]; error?: string }>(`/admin/ip-blocks/${encodeURIComponent(ip)}/accounts`),
 
-  waitlist: () => request<{ ok: boolean; entries?: WaitlistEntry[]; error?: string }>("/admin/waitlist"),
+  waitlist: (params: { search?: string; dateFrom?: string; dateTo?: string } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.search) qs.set("search", params.search);
+    if (params.dateFrom) qs.set("dateFrom", params.dateFrom);
+    if (params.dateTo) qs.set("dateTo", params.dateTo);
+    const suffix = qs.toString() ? `?${qs}` : "";
+    return request<{ ok: boolean; entries?: WaitlistEntry[]; error?: string }>(`/admin/waitlist${suffix}`);
+  },
   deleteWaitlistEntry: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/waitlist/${id}`, { method: "DELETE" }),
 
   // --- Modulo "Crear": avatares, objetos y niveles personalizados --------

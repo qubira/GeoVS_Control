@@ -6,16 +6,23 @@ export default function BlockedAccountsScreen() {
   const [blocks, setBlocks] = useState<AccountBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   function load() {
     setLoading(true);
-    api.accountBlocks().then(({ body }) => {
+    api.accountBlocks({ search: search || undefined, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined }).then(({ body }) => {
       setBlocks(body.blocks || []);
       setLoading(false);
     });
   }
 
-  useEffect(load, []);
+  useEffect(() => {
+    const t = setTimeout(load, 250);
+    return () => clearTimeout(t);
+  }, [search, dateFrom, dateTo]);
 
   async function handleUnblock(id: string) {
     await api.unblockAccount(id);
@@ -34,6 +41,36 @@ export default function BlockedAccountsScreen() {
           <div className="stat-label">Bloqueadas ahora</div>
         </div>
       </div>
+
+      <div className="row" style={{ marginBottom: 8 }}>
+        <input
+          className="input"
+          placeholder="Buscar por usuario, motivo o mensaje..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ minWidth: 280 }}
+        />
+        <button type="button" className="btn-ghost" onClick={() => setShowAdvanced((v) => !v)}>
+          {showAdvanced ? "▲ Ocultar filtro avanzado" : "▼ Filtro avanzado"}
+        </button>
+      </div>
+
+      {showAdvanced && (
+        <div className="panel" style={{ marginBottom: 16, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div>
+            <div className="label" style={{ marginTop: 0 }}>
+              Desde
+            </div>
+            <input className="input" type="date" style={{ marginBottom: 0 }} value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          </div>
+          <div>
+            <div className="label" style={{ marginTop: 0 }}>
+              Hasta
+            </div>
+            <input className="input" type="date" style={{ marginBottom: 0 }} value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          </div>
+        </div>
+      )}
 
       <div className="panel" style={{ overflowX: "auto" }}>
         {loading ? (
@@ -79,7 +116,7 @@ export default function BlockedAccountsScreen() {
               {blocks.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: "center", color: "var(--geo-text-dim)", padding: 24 }}>
-                    No hay cuentas bloqueadas.
+                    {search || dateFrom || dateTo ? "Sin resultados para ese filtro." : "No hay cuentas bloqueadas."}
                   </td>
                 </tr>
               )}

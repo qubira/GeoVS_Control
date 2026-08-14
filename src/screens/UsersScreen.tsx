@@ -12,13 +12,23 @@ export default function UsersScreen() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [blockedFilter, setBlockedFilter] = useState<"" | "true" | "false">("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
   const [viewingHistory, setViewingHistory] = useState<Account | null>(null);
 
   async function refresh() {
     setLoading(true);
-    const { body } = await api.listUsers({ search: search || undefined, role: roleFilter || undefined });
+    const { body } = await api.listUsers({
+      search: search || undefined,
+      role: roleFilter || undefined,
+      blocked: blockedFilter || undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+    });
     setUsers(body.users || []);
     setLoading(false);
   }
@@ -26,7 +36,7 @@ export default function UsersScreen() {
   useEffect(() => {
     const t = setTimeout(refresh, 250); // debounce de busqueda
     return () => clearTimeout(t);
-  }, [search, roleFilter]);
+  }, [search, roleFilter, blockedFilter, dateFrom, dateTo]);
 
   return (
     <div>
@@ -42,7 +52,7 @@ export default function UsersScreen() {
         </button>
       </div>
 
-      <div className="row" style={{ marginBottom: 16 }}>
+      <div className="row" style={{ marginBottom: 8 }}>
         <input
           className="input"
           placeholder="Buscar por usuario o correo..."
@@ -53,7 +63,42 @@ export default function UsersScreen() {
         <div style={{ width: 200 }}>
           <RoleSelect value={roleFilter} onChange={setRoleFilter} allowAll />
         </div>
+        <button type="button" className="btn-ghost" onClick={() => setShowAdvanced((v) => !v)}>
+          {showAdvanced ? "▲ Ocultar filtro avanzado" : "▼ Filtro avanzado"}
+        </button>
       </div>
+
+      {showAdvanced && (
+        <div className="panel" style={{ marginBottom: 16, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div>
+            <div className="label" style={{ marginTop: 0 }}>
+              Estado
+            </div>
+            <select
+              className="input"
+              style={{ marginBottom: 0, width: 160 }}
+              value={blockedFilter}
+              onChange={(e) => setBlockedFilter(e.target.value as "" | "true" | "false")}
+            >
+              <option value="">Todas</option>
+              <option value="false">Activas</option>
+              <option value="true">Bloqueadas</option>
+            </select>
+          </div>
+          <div>
+            <div className="label" style={{ marginTop: 0 }}>
+              Creada desde
+            </div>
+            <input className="input" type="date" style={{ marginBottom: 0 }} value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          </div>
+          <div>
+            <div className="label" style={{ marginTop: 0 }}>
+              Creada hasta
+            </div>
+            <input className="input" type="date" style={{ marginBottom: 0 }} value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          </div>
+        </div>
+      )}
 
       <div className="panel" style={{ overflowX: "auto" }}>
         {loading ? (

@@ -7,6 +7,8 @@ export default function LevelsPanel() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<CustomLevel | "new" | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [publishedFilter, setPublishedFilter] = useState<"" | "published" | "draft">("");
 
   function load() {
     setLoading(true);
@@ -53,6 +55,30 @@ export default function LevelsPanel() {
         </button>
       </div>
 
+      {levels.length > 0 && (
+        <div className="row" style={{ marginBottom: 16 }}>
+          <input
+            className="input"
+            placeholder="Buscar por nombre..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ minWidth: 220 }}
+          />
+          <div className="segmented">
+            {(["", "published", "draft"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                className={`segmented-btn ${publishedFilter === v ? "active" : ""}`}
+                onClick={() => setPublishedFilter(v)}
+              >
+                {v === "" ? "Todos" : v === "published" ? "Publicados" : "Borradores"}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <p className="subtitle">Cargando...</p>
       ) : (
@@ -68,7 +94,10 @@ export default function LevelsPanel() {
               </tr>
             </thead>
             <tbody>
-              {levels.map((l) => (
+              {levels
+                .filter((l) => l.name.toLowerCase().includes(search.trim().toLowerCase()))
+                .filter((l) => (publishedFilter === "" ? true : publishedFilter === "published" ? l.published : !l.published))
+                .map((l) => (
                 <tr key={l.id}>
                   <td style={{ fontWeight: 700 }}>{l.name}</td>
                   <td>

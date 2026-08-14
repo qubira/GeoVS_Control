@@ -12,16 +12,20 @@ export default function IpBlacklistScreen() {
   const [newReason, setNewReason] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [search, setSearch] = useState("");
 
   function load() {
     setLoading(true);
-    api.ipBlocks().then(({ body }) => {
+    api.ipBlocks({ search: search || undefined }).then(({ body }) => {
       setBlocks(body.blocks || []);
       setLoading(false);
     });
   }
 
-  useEffect(load, []);
+  useEffect(() => {
+    const t = setTimeout(load, 250);
+    return () => clearTimeout(t);
+  }, [search]);
 
   async function onAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -74,6 +78,16 @@ export default function IpBlacklistScreen() {
         </button>
       </form>
       {!!error && <p className="error-text">{error}</p>}
+
+      <div className="row" style={{ marginBottom: 16 }}>
+        <input
+          className="input"
+          placeholder="Buscar por IP o motivo..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ minWidth: 260 }}
+        />
+      </div>
 
       <div className="panel" style={{ overflowX: "auto" }}>
         {loading ? (
@@ -138,7 +152,7 @@ export default function IpBlacklistScreen() {
               {blocks.length === 0 && (
                 <tr>
                   <td colSpan={5} style={{ textAlign: "center", color: "var(--geo-text-dim)", padding: 24 }}>
-                    No hay IPs bloqueadas.
+                    {search ? "Sin resultados para esa búsqueda." : "No hay IPs bloqueadas."}
                   </td>
                 </tr>
               )}

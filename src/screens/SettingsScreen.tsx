@@ -7,6 +7,7 @@ export default function SettingsScreen() {
   const [newLabel, setNewLabel] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [search, setSearch] = useState("");
 
   function load() {
     setLoading(true);
@@ -64,6 +65,16 @@ export default function SettingsScreen() {
       </form>
       {!!error && <p className="error-text">{error}</p>}
 
+      <div className="row" style={{ marginBottom: 16 }}>
+        <input
+          className="input"
+          placeholder="Buscar motivo..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ minWidth: 240 }}
+        />
+      </div>
+
       <div className="panel" style={{ overflowX: "auto" }}>
         {loading ? (
           <p className="subtitle">Cargando...</p>
@@ -76,16 +87,18 @@ export default function SettingsScreen() {
               </tr>
             </thead>
             <tbody>
-              {reasons.map((r) => (
-                <tr key={r.id}>
-                  <td style={{ fontWeight: 700 }}>{r.label}</td>
-                  <td style={{ textAlign: "right" }}>
-                    <button className="btn-ghost" onClick={() => onDelete(r.id)}>
-                      🗑️ Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {reasons
+                .filter((r) => r.label.toLowerCase().includes(search.trim().toLowerCase()))
+                .map((r) => (
+                  <tr key={r.id}>
+                    <td style={{ fontWeight: 700 }}>{r.label}</td>
+                    <td style={{ textAlign: "right" }}>
+                      <button className="btn-ghost" onClick={() => onDelete(r.id)}>
+                        🗑️ Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               {reasons.length === 0 && (
                 <tr>
                   <td colSpan={2} style={{ textAlign: "center", color: "var(--geo-text-dim)", padding: 24 }}>

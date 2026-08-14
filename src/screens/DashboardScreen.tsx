@@ -5,6 +5,7 @@ import RangeFilter, { defaultRangeValue, type RangeValue } from "../components/R
 import OnlineByCountryCard from "../components/OnlineByCountryCard";
 import AccountsByCountryCard from "../components/AccountsByCountryCard";
 import LevelPopularityCard from "../components/LevelPopularityCard";
+import ModerationSummaryCard from "../components/ModerationSummaryCard";
 import UserHistoryModal from "../components/UserHistoryModal";
 
 export default function DashboardScreen() {
@@ -65,6 +66,7 @@ export default function DashboardScreen() {
         <OnlineByCountryCard />
         <AccountsByCountryCard range={range} />
         <LevelPopularityCard range={range} />
+        <ModerationSummaryCard range={range} />
 
         <div className="metric-card">
           <h2 className="metric-card-title">Más tiempo jugado</h2>

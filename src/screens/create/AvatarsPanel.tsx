@@ -8,6 +8,8 @@ export default function AvatarsPanel() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState("");
+  const [publishedFilter, setPublishedFilter] = useState<"" | "published" | "draft">("");
 
   function load() {
     setLoading(true);
@@ -91,13 +93,40 @@ export default function AvatarsPanel() {
         {!!error && <p className="error-text">{error}</p>}
       </div>
 
+      {avatars.length > 0 && (
+        <div className="row" style={{ marginBottom: 16 }}>
+          <input
+            className="input"
+            placeholder="Buscar por nombre..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ minWidth: 220 }}
+          />
+          <div className="segmented">
+            {(["", "published", "draft"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                className={`segmented-btn ${publishedFilter === v ? "active" : ""}`}
+                onClick={() => setPublishedFilter(v)}
+              >
+                {v === "" ? "Todos" : v === "published" ? "Publicados" : "Borradores"}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <p className="subtitle">Cargando...</p>
       ) : avatars.length === 0 ? (
         <p className="subtitle">Todavía no hay avatares personalizados.</p>
       ) : (
         <div className="thumb-grid">
-          {avatars.map((a) => (
+          {avatars
+            .filter((a) => a.name.toLowerCase().includes(search.trim().toLowerCase()))
+            .filter((a) => (publishedFilter === "" ? true : publishedFilter === "published" ? a.published : !a.published))
+            .map((a) => (
             <div className="thumb-card" key={a.id}>
               <button className="thumb-card-delete" onClick={() => onDelete(a.id)} title="Eliminar">
                 ✕
