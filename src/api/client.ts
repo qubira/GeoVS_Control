@@ -98,6 +98,15 @@ export interface ModerationSummary {
   topReasons: { label: string; count: number }[];
 }
 
+export interface Comment {
+  id: string;
+  userId: string | null;
+  username: string;
+  text: string;
+  read: boolean;
+  createdAt: string;
+}
+
 export type ConnectionQuality = "muy_buena" | "normal" | "baja" | "mala";
 
 export interface LiveRoomPlayer {
@@ -473,6 +482,23 @@ export const api = {
   roomSamples: (roomLogId: string) =>
     request<{ ok: boolean; samples?: RoomLatencySample[]; error?: string }>(`/admin/rooms/history/${roomLogId}/samples`),
   endRoom: (code: string) => request<{ ok: boolean; error?: string }>(`/admin/rooms/${code}/end`, { method: "POST" }),
+
+  // --- Bandeja de comentarios --------------------------------------------
+  feedback: (params: { search?: string; read?: "true" | "false"; dateFrom?: string; dateTo?: string } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.search) qs.set("search", params.search);
+    if (params.read) qs.set("read", params.read);
+    if (params.dateFrom) qs.set("dateFrom", params.dateFrom);
+    if (params.dateTo) qs.set("dateTo", params.dateTo);
+    const suffix = qs.toString() ? `?${qs}` : "";
+    return request<{ ok: boolean; comments?: Comment[]; unreadCount?: number; error?: string }>(`/admin/feedback${suffix}`);
+  },
+  markFeedbackRead: (id: string, read: boolean) =>
+    request<{ ok: boolean; comment?: Comment; error?: string }>(`/admin/feedback/${id}/read`, {
+      method: "PUT",
+      body: JSON.stringify({ read }),
+    }),
+  deleteFeedback: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/feedback/${id}`, { method: "DELETE" }),
 
   waitlist: (params: { search?: string; dateFrom?: string; dateTo?: string } = {}) => {
     const qs = new URLSearchParams();
