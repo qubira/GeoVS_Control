@@ -5,11 +5,12 @@ import DashboardScreen from "./screens/DashboardScreen";
 import UsersScreen from "./screens/UsersScreen";
 import AuditLogScreen from "./screens/AuditLogScreen";
 import WaitlistScreen from "./screens/WaitlistScreen";
+import ConversationsScreen from "./screens/ConversationsScreen";
 import CreateScreen from "./screens/CreateScreen";
 import RoleBadge from "./components/RoleBadge";
 import logo from "../imagen/logo_geovs.png";
 
-type Tab = "dashboard" | "users" | "audit" | "waitlist" | "create";
+type Tab = "dashboard" | "users" | "audit" | "waitlist" | "conversations" | "create";
 
 export default function App() {
   const { account, loading, networkError, logout, retry } = useAuth();
@@ -76,6 +77,9 @@ export default function App() {
             <button className={`nav-item ${tab === "waitlist" ? "active" : ""}`} onClick={() => setTab("waitlist")}>
               📝 Lista de espera
             </button>
+            <button className={`nav-item ${tab === "conversations" ? "active" : ""}`} onClick={() => setTab("conversations")}>
+              💬 Conversaciones
+            </button>
           </>
         )}
         <button className={`nav-item ${tab === "create" ? "active" : ""}`} onClick={() => setTab("create")}>
@@ -97,6 +101,7 @@ export default function App() {
         {effectiveTab === "users" && <UsersScreen />}
         {effectiveTab === "audit" && <AuditLogScreen />}
         {effectiveTab === "waitlist" && <WaitlistScreen />}
+        {effectiveTab === "conversations" && <ConversationsScreen />}
         {effectiveTab === "create" && <CreateScreen />}
       </main>
     </div>

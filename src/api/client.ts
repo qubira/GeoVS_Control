@@ -73,6 +73,15 @@ export interface CountrySession {
   durationSec: number | null;
 }
 
+export interface ChatMessage {
+  id: string;
+  roomCode: string;
+  userId: string | null;
+  username: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface WaitlistEntry {
   id: string;
   name: string;
@@ -268,6 +277,17 @@ export const api = {
     request<{ ok: boolean } & Partial<LevelsPopularity> & { error?: string }>(`/admin/levels/popularity${rangeQS(params)}`),
   userPeakHours: (id: string, params: RangeParams = {}) =>
     request<{ ok: boolean } & Partial<PeakHours> & { error?: string }>(`/admin/users/${id}/peak-hours${rangeQS(params)}`),
+
+  // --- Conversaciones (moderacion) ----------------------------------------
+  chatMessages: (params: { search?: string; page?: number } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.search) qs.set("search", params.search);
+    if (params.page) qs.set("page", String(params.page));
+    const suffix = qs.toString() ? `?${qs}` : "";
+    return request<{ ok: boolean; messages?: ChatMessage[]; total?: number; page?: number; pageSize?: number; error?: string }>(
+      `/admin/chat-messages${suffix}`
+    );
+  },
 
   waitlist: () => request<{ ok: boolean; entries?: WaitlistEntry[]; error?: string }>("/admin/waitlist"),
   deleteWaitlistEntry: (id: string) => request<{ ok: boolean; error?: string }>(`/admin/waitlist/${id}`, { method: "DELETE" }),
